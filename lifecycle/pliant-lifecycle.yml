@@ -1,0 +1,34 @@
+generated: '2026-07-20'
+method: searched
+source: https://customer-api.getpliant.com/docs/versioning
+versioning:
+  scheme: header
+  header: Pliant-API-Version
+  docs: https://customer-api.getpliant.com/docs/versioning
+  recommendation: Include the Pliant-API-Version header with every API request.
+lifecycle_stages:
+- id: beta
+  description: Endpoints may change at any time, including breaking changes, with or
+    without prior notice.
+- id: active
+  description: Stable endpoints; breaking changes follow a formal deprecation process.
+- id: deprecated
+  description: At least six months' notice is given before removing functionality or
+    introducing breaking changes (exceptions for legal/security issues).
+- id: sunset
+  description: Endpoint access is terminated after the deprecation period concludes.
+deprecation:
+  policy_url: https://customer-api.getpliant.com/docs/versioning
+  minimum_notice: 6 months
+  rfc8594_sunset_header: false
+  liability_note: Pliant is not liable for issues arising from the continued use of
+    deprecated APIs.
+deprecated_operations:
+- reference: get-callback-log (Get Callback Log) — replaced by GET /callbacks
+- reference: get-callback-details (Get Callback Details) — replaced by GET /callbacks/{callbackId}
+- reference: sensitive-card-data-api-for-pci-dss (MeaWallet PCI-DSS API) — replaced by
+    the Pliant-based PCI API
+- note: card issuing/details `type` field deprecated and replaced with `cardConfig`
+sla:
+  documented: false
+status_page: https://customer-api.getpliant.com/page/status

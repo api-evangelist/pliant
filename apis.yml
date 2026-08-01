@@ -1,7 +1,16 @@
 aid: pliant
 name: Pliant
-description: Pliant is a company surfaced as a portfolio company of speedinvest and added to the API Evangelist
-  network as a stub for enrichment. This profile is a lead awaiting the enrichment pipeline.
+description: >-
+  Pliant is a Berlin-based financial technology company offering a business
+  credit card and spend-management platform, plus Cards-as-a-Service (CaaS) and
+  Banking-as-a-Service (BaaS) infrastructure for banks and platforms. Its Pro API
+  lets customers programmatically issue physical, virtual, single-use and
+  specialized cards (travel, fleet, benefits, insurance-claim), apply card
+  controls and advanced limits, retrieve transactions and accounting data, manage
+  receipts, projects, teams and statements, and subscribe to real-time callbacks.
+  Pliant is PCI DSS certified, ISO/IEC 27001:2022 certified and holds an EU
+  e-money license, with customers including BMW, Decathlon, Deutsche Telekom and
+  Commerzbank.
 url: https://raw.githubusercontent.com/api-evangelist/pliant/refs/heads/main/apis.yml
 x-type: company
 x-source: vc-portfolio
@@ -9,14 +18,155 @@ x-backed-by:
 - speedinvest
 x-tier: stub
 x-tier-reason: portfolio-lead
+accessModel:
+  pricing: unknown
+  onboarding: self-serve
+  trial: false
+  try_now: false
+  public: false
+  label: Self-serve signup
+  confidence: medium
+  source:
+  - authentication
+  generated: '2026-07-22'
+  method: derived
 specificationVersion: '0.20'
+image: https://a.storyblok.com/f/169635/1200x630/92b10eaf7c/pliant-og-image.png
 created: '2026-07-17'
-modified: '2026-07-17'
+modified: '2026-07-20'
 tags:
 - Company
-apis: []
+- Payments
+- Corporate Cards
+- Card Issuing
+- Spend Management
+- Expense Management
+- Fintech
+- Cards as a Service
+- Banking as a Service
+- Travel
+- Accounting
+apis:
+- name: Pliant Pro API (Customer)
+  description: >-
+    Pliant's Pro API enables customers to access Pliant credit card data and
+    features programmatically — issue and manage cards, apply card controls and
+    limits, retrieve transactions and accounting data, manage receipts, projects,
+    teams, payments and statements, and subscribe to real-time event callbacks.
+    OAuth 2.0 client-credentials (Auth0) bearer-token auth; offset pagination;
+    header-based versioning via Pliant-API-Version.
+  humanURL: https://customer-api.getpliant.com
+  baseURL: https://partner-api.getpliant.com/api/
+  tags:
+  - Payments
+  - Card Issuing
+  - Corporate Cards
+  - Spend Management
+  properties:
+  - type: Documentation
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: APIReference
+    url: https://customer-api.getpliant.com/reference/list-organizations
+  - type: GettingStarted
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: Authentication
+    url: authentication/pliant-authentication.yml
+  - type: MCPServer
+    url: mcp/pliant-mcp.yml
+  - type: Webhooks
+    url: asyncapi/pliant-callbacks-webhooks.yml
+  - type: Sandbox
+    url: sandbox/pliant-sandbox.yml
+  - type: Conventions
+    url: conventions/pliant-conventions.yml
+  - type: ErrorCatalog
+    url: errors/pliant-error-codes.yml
+  - type: Lifecycle
+    url: lifecycle/pliant-lifecycle.yml
+  - type: ChangeLog
+    url: changelog/pliant-changelog.yml
+  - type: DataModel
+    url: data-model/pliant-data-model.yml
+  - type: Conformance
+    url: conformance/pliant-conformance.yml
+  - type: Components
+    url: components/pliant-components.yml
+  - type: AgentSkill
+    url: skills/_index.yml
+  - type: LLMsTxt
+    url: llms/pliant-llms.txt
+common:
+- type: VulnerabilityDisclosure
+  url: security/pliant-vulnerability-disclosure.yml
+- type: Security
+  url: https://www.getpliant.com/.well-known/security.txt
+- type: SecurityTxt
+  url: well-known/pliant-security.txt
+- type: WellKnown
+  url: well-known/pliant-well-known.yml
+- type: DeveloperPortal
+  url: https://customer-api.getpliant.com
+- type: Documentation
+  url: https://customer-api.getpliant.com/docs/introduction
+- type: APIReference
+  url: https://customer-api.getpliant.com/reference/list-organizations
+- type: GettingStarted
+  url: https://customer-api.getpliant.com/docs/introduction
+- type: Website
+  url: https://www.getpliant.com/en-us
+- type: Blog
+  url: https://www.getpliant.com/en-us/blog
+- type: Pricing
+  url: https://www.getpliant.com/en-us/pricing
+- type: Support
+  url: https://help.getpliant.com/en/
+- type: HelpCenter
+  url: https://help.getpliant.com/en/
+- type: SignUp
+  url: https://www.getpliant.com/en-us/book-demo
+- type: PrivacyPolicy
+  url: https://www.getpliant.com/en-us/privacy-policy
+- type: StatusPage
+  url: https://customer-api.getpliant.com/page/status
+- type: Deprecation
+  url: https://customer-api.getpliant.com/docs/versioning
+- type: ChangeLog
+  url: https://customer-api.getpliant.com/changelog
+- type: MCPServer
+  url: mcp/pliant-mcp.yml
+- type: Authentication
+  url: authentication/pliant-authentication.yml
+- type: Webhooks
+  url: asyncapi/pliant-callbacks-webhooks.yml
+- type: Sandbox
+  url: sandbox/pliant-sandbox.yml
+- type: Conventions
+  url: conventions/pliant-conventions.yml
+- type: ErrorCatalog
+  url: errors/pliant-error-codes.yml
+- type: Lifecycle
+  url: lifecycle/pliant-lifecycle.yml
+- type: DataModel
+  url: data-model/pliant-data-model.yml
+- type: Conformance
+  url: conformance/pliant-conformance.yml
+- type: Compliance
+  url: conformance/pliant-conformance.yml
+- type: Components
+  url: components/pliant-components.yml
+- type: AgentSkill
+  url: skills/_index.yml
+- type: LLMsTxt
+  url: llms/pliant-llms.txt
+- type: DomainSecurity
+  url: security/pliant-domain-security.yml
 maintainers:
 - FN: Kin Lane
   email: kin@apievangelist.com
 - FN: APIs.json
   email: info@apis.io
+x-enrichment:
+  date: '2026-07-20'
+  status: enriched
+  artifacts_added: 17
+  pass: local-v1

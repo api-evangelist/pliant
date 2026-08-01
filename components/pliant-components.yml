@@ -1,0 +1,28 @@
+generated: '2026-07-20'
+method: searched
+source: https://customer-api.getpliant.com/docs/pci-widget-web
+families:
+- name: PCI Widget
+  description: >-
+    Embeddable, PCI-DSS-compliant widgets for securely displaying sensitive card
+    data (PAN, CVV, PIN) to cardholders without the partner touching card data.
+  surfaces:
+  - name: PCI Widget Web
+    type: web-iframe
+    docs: https://customer-api.getpliant.com/docs/pci-widget-web
+    examples: https://customer-api.getpliant.com/docs/examples-for-iframe-widget-usage
+  - name: PCI Widget Mobile
+    type: mobile-sdk
+    docs: https://customer-api.getpliant.com/docs/pci-widget-mobile
+    platforms:
+    - {name: iOS, docs: https://customer-api.getpliant.com/docs/ios-specific-mobile-widget}
+    - {name: Android, docs: https://customer-api.getpliant.com/docs/android-specific-mobile-widget}
+    - {name: React Native, docs: https://customer-api.getpliant.com/docs/react-native-mobile-widget}
+  - name: Web Widget (MeaWallet)
+    type: web-widget
+    docs: https://customer-api.getpliant.com/docs/web-widget-meawallet
+    note: Provided via partner MeaWallet.
+auth_note: >-
+  Widgets are authenticated with a short-lived OTP obtained from the backend
+  (get-otp-for-pci-widget) on the dedicated PCI host (pci-api.getpliant.com); the
+  OTP endpoint must be called server-side.

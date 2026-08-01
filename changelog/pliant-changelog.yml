@@ -1,0 +1,28 @@
+generated: '2026-07-20'
+method: searched
+source: https://customer-api.getpliant.com/changelog
+scheme: dated-entries
+subscribe: https://customer-api.getpliant.com/subscribe-to-updates
+entries:
+- title: Single-Call Card Issuing & Card Access Links
+  url: https://customer-api.getpliant.com/changelog/single-call-card-issuing-card-access-links
+  breaking: false
+  highlights: Instant/synchronous single-call card issuing and card access links.
+- title: Multiple Card Limits & Callback Improvements
+  url: https://customer-api.getpliant.com/changelog/multiple-card-limits-callback-improvements
+  breaking: false
+  highlights: additionalLimits on cards (create/update/remove in one request); callback
+    improvements.
+- title: Access Token Quotas
+  url: https://customer-api.getpliant.com/changelog/access-token-quotas
+  breaking: false
+  highlights: Hourly and daily quotas on access-token requests with 429 on exceed.
+- title: Multiple Callback Subscriptions
+  url: https://customer-api.getpliant.com/changelog/multiple-callback-subscriptions
+  breaking: false
+  highlights: Multiple callback subscriptions per event type (different URLs); bulk
+    upsert; up to 42 per event type.
+- title: Custom Fields Enhancements
+  url: https://customer-api.getpliant.com/changelog/custom-fields-enhancements
+  breaking: false
+  highlights: Enhancements to custom fields on transactions.

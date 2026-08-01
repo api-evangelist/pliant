@@ -1,0 +1,20 @@
+generated: '2026-07-20'
+method: generated
+source: >-
+  Grounded in the Pliant Pro API reference operations
+  (https://customer-api.getpliant.com/reference/) plus conventions/ and errors/.
+api: https://customer-api.getpliant.com
+auth: OAuth 2.0 client-credentials (bearer). See authentication/pliant-authentication.yml
+skills:
+- file: pliant-issue-travel-card.md
+  name: Issue a travel virtual card with controls
+  operations: [get-available-cards, issue-card, update-card-controls-by-card, update-card-limit]
+- file: pliant-onboard-cardholder.md
+  name: Onboard a cardholder
+  operations: [invite-cardholders, register-cardholders, get-cardholder-details, get-cards]
+- file: pliant-reconcile-transactions.md
+  name: Reconcile transactions and attach receipts
+  operations: [get-transactions, get-accounting-transactions-batch, upload-receipt, update-transaction-partner-submission-status-batch]
+- file: pliant-subscribe-callbacks.md
+  name: Subscribe to real-time callbacks
+  operations: [bulk-upsert-subscriptions, get-callback-subscriptions, delete-subscription]

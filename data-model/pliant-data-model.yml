@@ -1,0 +1,59 @@
+generated: '2026-07-20'
+method: derived
+source: >-
+  https://customer-api.getpliant.com/docs/business-entities and the Pro API entity
+  guides (organization, card-account, cardholder, card, transaction,
+  accounting-transaction, receipt, custom-field, payment, statement, account-entry)
+entities:
+- name: Organization
+  description: Top-level customer entity; owns card accounts, cardholders, cards and
+    accounting objects.
+- name: CardAccount
+  description: Settlement account with one fixed currency; each org has >=1, exactly
+    one active default.
+- name: Cardholder
+  description: Person (or technical/travel identity) that cards are issued to; can belong
+    to multiple organizations.
+- name: Card
+  description: Physical, virtual, single-use or specialized (travel/fleet/benefit) credit
+    card with controls and limits.
+- name: CardControl
+  description: Spend controls attached to a card (categories, limits, locking).
+- name: Transaction
+  description: A card transaction (PENDING/CONFIRMED/REVERSED/DECLINED) with merchant
+    data.
+- name: AccountingTransaction
+  description: Accounting view of a transaction with custom fields, project and team.
+- name: Receipt
+  description: File/metadata attached to a transaction (upload, automatch, PDF/thumbnail).
+- name: CustomField
+  description: Org-defined TEXT/SELECT field set on card- or transaction-level.
+- name: Project
+  description: Cost unit for accounting; can be team-restricted.
+- name: Team
+  description: Cost center for accounting; cardholders are assigned to teams.
+- name: Payment
+  description: Payment per the organization's payment frequency.
+- name: Statement
+  description: Monthly grouping of booked transactions and payments; exports PDF/CSV.
+- name: AccountEntry
+  description: A single finally-booked movement on the organization's account; grouped
+    by statements.
+relationships:
+- {from: CardAccount, type: belongs_to, to: Organization, via: organizationId}
+- {from: Cardholder, type: belongs_to, to: Organization, via: organizationId}
+- {from: Card, type: belongs_to, to: Cardholder, via: cardholderId}
+- {from: Card, type: belongs_to, to: CardAccount, via: cardAccountId}
+- {from: Card, type: has_one, to: CardControl, via: cardId}
+- {from: Transaction, type: belongs_to, to: Card, via: cardId}
+- {from: Transaction, type: has_one, to: AccountingTransaction, via: transactionId}
+- {from: Transaction, type: has_many, to: Receipt, via: transactionId}
+- {from: AccountingTransaction, type: has_many, to: CustomField, via: transactionId}
+- {from: AccountingTransaction, type: belongs_to, to: Project, via: projectId}
+- {from: AccountingTransaction, type: belongs_to, to: Team, via: teamId}
+- {from: Project, type: belongs_to, to: Organization, via: organizationId}
+- {from: Team, type: belongs_to, to: Organization, via: organizationId}
+- {from: Cardholder, type: has_many, to: Team, via: teamId}
+- {from: Payment, type: belongs_to, to: Organization, via: organizationId}
+- {from: Statement, type: belongs_to, to: Organization, via: organizationId}
+- {from: AccountEntry, type: belongs_to, to: Statement, via: statementId}

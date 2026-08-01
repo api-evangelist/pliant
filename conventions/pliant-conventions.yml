@@ -1,0 +1,60 @@
+generated: '2026-07-20'
+method: searched
+source: https://customer-api.getpliant.com/docs/pliant-api-guidelines
+docs:
+  guidelines: https://customer-api.getpliant.com/docs/pliant-api-guidelines
+  pagination: https://customer-api.getpliant.com/docs/pagination
+  versioning: https://customer-api.getpliant.com/docs/versioning
+  error_handling: https://customer-api.getpliant.com/docs/error-handling
+  callbacks: https://customer-api.getpliant.com/docs/callbacks
+  monetary_values: https://customer-api.getpliant.com/docs/monetary-values
+  date_and_time: https://customer-api.getpliant.com/docs/date-and-time
+authentication:
+  style: oauth2-client-credentials
+  header: Authorization
+  token_type: Bearer
+  see: authentication/pliant-authentication.yml
+versioning:
+  style: header
+  header: Pliant-API-Version
+  recommendation: Include Pliant-API-Version on every request.
+  see: lifecycle/pliant-lifecycle.yml
+pagination:
+  style: offset
+  params: [limit, page, sortBy, sortDirection]
+  sort_direction_values: [ASC, DESC]
+  default_page_size: 50
+idempotency:
+  request_side_supported: false
+  note: >-
+    The Pro API does not document a request-side Idempotency-Key header. Idempotency
+    guidance is on the CONSUMER side of callbacks: callback delivery is "at least
+    once" (duplicates possible), so partners are told to implement idempotent
+    callback-receiving endpoints and de-duplicate on X-Callback-Id.
+async_semantics:
+  note: >-
+    Many mutating operations (card issuing, card loading, receipt automatching,
+    CSV export) are asynchronous — the request is accepted and the final state is
+    delivered via a callback. Callers must rely on the callback rather than the
+    immediate response, except for the explicit instant/synchronous card-issuing
+    endpoints.
+rate_limiting:
+  limit: 900 requests per 5 minutes per IP address
+  exceeded_status: 429
+  exceeded_message: Sending more than 900 requests in 5 minutes is not allowed.
+  token_endpoint_quota: >-
+    Access-token requests carry hourly and daily quota headers; exceeding them
+    returns HTTP 429.
+request_tracing:
+  note: Callback deliveries carry X-Callback-Id and X-Organization-Id headers; no
+    documented request-side correlation-id header on API calls.
+error_envelope:
+  format: custom (string error codes; not RFC 9457 problem+json)
+  see: errors/pliant-error-codes.yml
+monetary_values:
+  note: See monetary-values guide; amounts are handled in the card-account currency.
+cross_links:
+  errors: errors/pliant-error-codes.yml
+  lifecycle: lifecycle/pliant-lifecycle.yml
+  authentication: authentication/pliant-authentication.yml
+  webhooks: asyncapi/pliant-callbacks-webhooks.yml

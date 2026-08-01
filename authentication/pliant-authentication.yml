@@ -1,0 +1,31 @@
+generated: '2026-07-20'
+method: searched
+source: https://customer-api.getpliant.com/docs/authenticated-api-usage
+docs: https://customer-api.getpliant.com/docs/authenticated-api-usage
+summary:
+  types: [oauth2]
+  oauth2_flows: [clientCredentials]
+  token_type: Bearer
+  identity_provider: Auth0
+schemes:
+- name: OAuth2ClientCredentials
+  type: oauth2
+  flow: clientCredentials
+  description: >-
+    OAuth 2.0 Client Credentials flow. During onboarding the customer receives a
+    clientId and clientSecret, which are exchanged at the Auth0 token endpoint
+    (separate production and sandbox endpoints) with grant_type=client_credentials
+    for an access_token. The bearer access token must be included in the
+    Authorization header on every API request. Tokens expire (e.g. expires_in
+    86400 = 24h). The authorization flow must be handled exclusively by a secure
+    backend; web frontends and mobile apps must not call the API directly or
+    expose the clientSecret.
+  in: header
+  parameter_name: Authorization
+scopes_documented: false
+scopes_note: >-
+  The Pro API does not document OAuth scopes/permissions; access is scoped by the
+  onboarded client credentials rather than per-request scope grants.
+callback_authentication: >-
+  Inbound callbacks (webhooks) can be verified via Ed25519 signature headers, and
+  Pliant can optionally deliver callbacks with OAuth 2.0 authentication.

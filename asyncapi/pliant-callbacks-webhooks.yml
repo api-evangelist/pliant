@@ -1,0 +1,38 @@
+generated: '2026-07-20'
+method: searched
+source: https://customer-api.getpliant.com/docs/callbacks
+spec_type: Webhooks
+transport: HTTPS POST
+subscription_model: >-
+  Partners subscribe per entity via the API (create-*-subscription endpoints), or
+  bulk via bulk-upsert-subscriptions. Multiple subscriptions per event type are
+  allowed when callback URLs differ (up to 42 per event type).
+delivery:
+  semantics: at-least-once (duplicates possible; consumers should be idempotent)
+  latency: 95% of callbacks delivered within 10 seconds
+  ordering: not guaranteed; callbacks may arrive out of sequence
+authentication:
+  signature: Ed25519 signature-header verification
+  optional_oauth2: Callbacks can optionally be delivered with OAuth 2.0 authentication
+  headers: [X-Organization-Id, X-Callback-Id, X-Callback-Created-At]
+event_types:
+- CARD_ISSUED
+- CARD_ACTIVATED
+- CARD_STATUS_CHANGED
+- CARD_BALANCE_UPDATED
+- CARD_LIMITS_CHANGED
+- CARD_TERMINATED
+- STATEMENT_CSV_DOWNLOAD_READY
+event_types_note: >-
+  Event types above are the callback types referenced across the Pro API
+  reference (card lifecycle, balance/limit changes, statement CSV export). Pliant
+  offers per-entity subscriptions for card-account, cardholder, card, card-copilot,
+  transaction, receipt, receipt-automatching, accounting-transaction, project,
+  team, payment, account-entry and statement entities; the published docs do not
+  enumerate an exhaustive event catalog.
+management_endpoints:
+- get-callback-subscriptions
+- bulk-upsert-subscriptions
+- delete-subscription
+- search-callbacks
+- get-callback

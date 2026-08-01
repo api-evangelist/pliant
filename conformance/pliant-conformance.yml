@@ -1,0 +1,40 @@
+generated: '2026-07-20'
+method: searched
+source: https://www.getpliant.com/en-us
+compliance_program:
+  certifications:
+  - PCI DSS
+  - ISO/IEC 27001:2022
+  licenses:
+  - EU e-money license (EMI)
+  evidence: >-
+    Pliant states on its website that it is PCI DSS certified, ISO/IEC 27001:2022
+    certified, and EU e-money licensed. The Pro API additionally exposes dedicated
+    PCI-DSS certified endpoints on a separate host (pci-api.getpliant.com) for
+    partners that are themselves PCI-DSS certified.
+standards:
+- id: oauth2
+  conforms: true
+  evidence: OAuth 2.0 client-credentials flow (Auth0) for API authentication.
+- id: oauth2-client-credentials
+  conforms: true
+  evidence: Documented client-credentials grant with clientId/clientSecret.
+- id: pci-dss
+  conforms: true
+  evidence: PCI DSS certified; dedicated PCI API host for sensitive card data.
+- id: iso-27001
+  conforms: true
+  evidence: ISO/IEC 27001:2022 certified (stated on website).
+- id: ed25519-webhook-signatures
+  conforms: true
+  evidence: Callback authenticity via Ed25519 signature headers.
+- id: rfc9457-problem-details
+  conforms: false
+  evidence: Errors use custom string error codes, not application/problem+json.
+- id: rfc8594-sunset-header
+  conforms: false
+  evidence: Deprecation policy documented (>=6 months notice) but no RFC 8594 Sunset
+    headers.
+- id: oidc-discovery
+  conforms: false
+  evidence: No /.well-known/openid-configuration served on the API host.

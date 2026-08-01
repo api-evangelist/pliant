@@ -1,0 +1,36 @@
+generated: '2026-07-20'
+method: searched
+source: https://customer-api.getpliant.com/docs/generate-test-transactions
+environments:
+- name: sandbox
+  base_url: https://sandbox.partner-api.getpliant.com/api/
+  note: The sandbox environment is not connected to the outside world.
+- name: production
+  base_url: https://partner-api.getpliant.com/api/
+  note: Full access to all credit card types issued by Pliant.
+pci_host: https://pci-api.getpliant.com
+test_values:
+  physical_card_activation_code: '999999'
+  physical_card_activation_note: >-
+    On sandbox, activate physical cards using activation code 999999 or the card's
+    refNum (from Card Details).
+sandbox_only_endpoints:
+- reference: generate-test-transactions-in-sandbox
+  name: Generate Test Transactions
+  description: Generate one or more test transactions to exercise transaction/callback
+    endpoints. Only required parameter is cardToken; other fields default to sensible
+    values.
+- reference: simulate-transaction-status-transition
+  name: Simulate Transaction Status Transition
+  description: Move an existing sandbox transaction from PENDING to CONFIRMED, REVERSED
+    or DECLINED.
+- reference: simulate-prefund-payment
+  name: Simulate Prefund Payment
+  description: Simulate a prefund payment to an organization's card account (appears
+    within ~10 minutes).
+recipes:
+- https://customer-api.getpliant.com/recipes/generate-test-transactions-in-our-sandbox
+notes: >-
+  Pliant does not publish a fixed list of test card numbers; sandbox testing uses
+  generated test transactions plus the simulate endpoints. Test data generation is
+  only available in the sandbox environment.

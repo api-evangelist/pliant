@@ -1,0 +1,43 @@
+generated: '2026-07-20'
+method: searched
+source: https://customer-api.getpliant.com/docs/error-handling
+format: custom
+envelope_note: >-
+  Errors are returned with standard HTTP status classes (2xx success, 4xx client
+  error, 5xx server error) and a string error code. The documentation does not
+  publish a full JSON envelope schema and does not follow RFC 9457
+  application/problem+json.
+status_classes:
+- {class: 2xx, meaning: success}
+- {class: 4xx, meaning: client error}
+- {class: 5xx, meaning: server error}
+error_codes:
+- code: API_VERSION_NOT_SUPPORTED
+  area: general
+- code: ILLEGAL_ARGUMENTS_PROVIDED
+  area: general
+- code: USER_ALREADY_EXISTS
+  area: cardholder
+- code: RECEIPT_FILE_ERROR
+  area: receipt
+- code: RECEIPT_UPLOAD_NOT_ENABLED
+  area: receipt
+- code: INVALID_ACCESS_CODE
+  area: card
+- code: ILLEGAL_STATUS_TRANSITION
+  area: card
+- code: LOCKED_BY_CARD_CONTROL
+  area: card
+- code: NOT_ACTIVE_ORG
+  area: card
+- code: INVALID_PHONE_NUMBER
+  area: card
+- code: CARD_NAME_NOT_SUPPORTED
+  area: card
+- code: ISSUANCE_LIMIT_EXCEEDED
+  area: card-request
+- code: COMMENT_IS_MANDATORY
+  area: card-request
+rate_limit_error:
+  status: 429
+  message: Sending more than 900 requests in 5 minutes is not allowed.
