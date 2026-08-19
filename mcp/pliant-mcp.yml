@@ -6,25 +6,28 @@ server:
   name: pliant-customer-api
   transport: http
   url: https://customer-api.getpliant.com/mcp
-description: >-
-  Pliant publishes an official hosted/remote MCP server for the Pro API
-  (Customer). It exposes direct API access to Pliant Pro API functionality,
-  documentation search, real-time data from the connected Pliant account, and
-  code-generation assistance for Pliant integrations.
+description: Pliant publishes an official hosted/remote MCP server for the Pro API (Customer). It exposes
+  direct API access to Pliant Pro API functionality, documentation search, real-time data from the connected
+  Pliant account, and code-generation assistance for Pliant integrations.
 client_config_example:
   mcpServers:
     pliant-customer-api:
       url: https://customer-api.getpliant.com/mcp
-authentication: >-
-  Credentials are passed as headers (or via query parameters) configured in the
-  MCP client, matching the Pro API's OAuth 2.0 client-credentials bearer-token
-  scheme.
+authentication: Credentials are passed as headers (or via query parameters) configured in the MCP client,
+  matching the Pro API's OAuth 2.0 client-credentials bearer-token scheme.
 clients_documented:
 - Cursor
 - Windsurf
 - Claude Desktop
 tools: []
-tools_note: >-
-  The provider documents the server capabilities (API access, docs search,
-  account data, code generation) but does not publish an explicit per-tool
-  manifest; tools are generated dynamically from the Pro API surface.
+tools_note: The provider documents the server capabilities (API access, docs search, account data, code
+  generation) but does not publish an explicit per-tool manifest; tools are generated dynamically from
+  the Pro API surface.
+deployment:
+  mode: remote
+  endpoint: https://customer-api.getpliant.com/mcp
+  verified: probed
+  probe: live
+  tools: 5
+  checked: '2026-08-12'
+  source: catalog MCP census
