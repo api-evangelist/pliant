@@ -1,0 +1,65 @@
+generated: '2026-10-14'
+method: derived
+source: the pre-flight dossier, apis.yml pointers, spec servers, well-known, vendors -- nothing fetched here
+generator: derive-hosts.py
+summary:
+  hosts: 4
+  own: 4
+  other_domain: 0
+  platform: 0
+  roles:
+  - other
+  - portal
+  - support
+  - website
+hosts:
+- host: customer-api.getpliant.com
+  found_by:
+  - pointer
+  - apis[]
+  types:
+  - DeveloperPortal
+  - Documentation
+  - APIReference
+  - GettingStarted
+  - StatusPage
+  - Deprecation
+  - ChangeLog
+  serves:
+  - docs
+  registrable_domain: getpliant.com
+  role: portal
+  relation: own
+- host: help.getpliant.com
+  found_by:
+  - pointer
+  types:
+  - Support
+  - HelpCenter
+  serves: []
+  registrable_domain: getpliant.com
+  role: support
+  relation: own
+- host: partner-api.getpliant.com
+  found_by:
+  - apis[]
+  types: []
+  serves:
+  - api
+  registrable_domain: getpliant.com
+  role: other
+  relation: own
+- host: www.getpliant.com
+  found_by:
+  - pointer
+  types:
+  - Security
+  - Website
+  - Blog
+  - Pricing
+  - SignUp
+  - PrivacyPolicy
+  serves: []
+  registrable_domain: getpliant.com
+  role: website
+  relation: own

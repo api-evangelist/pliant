@@ -1,23 +1,26 @@
 aid: pliant
+
 name: Pliant
-description: >-
-  Pliant is a Berlin-based financial technology company offering a business
-  credit card and spend-management platform, plus Cards-as-a-Service (CaaS) and
-  Banking-as-a-Service (BaaS) infrastructure for banks and platforms. Its Pro API
-  lets customers programmatically issue physical, virtual, single-use and
-  specialized cards (travel, fleet, benefits, insurance-claim), apply card
-  controls and advanced limits, retrieve transactions and accounting data, manage
-  receipts, projects, teams and statements, and subscribe to real-time callbacks.
-  Pliant is PCI DSS certified, ISO/IEC 27001:2022 certified and holds an EU
-  e-money license, with customers including BMW, Decathlon, Deutsche Telekom and
-  Commerzbank.
+
+description: Pliant is a Berlin-based financial technology company offering a business credit card and spend-management platform, plus Cards-as-a-Service
+  (CaaS) and Banking-as-a-Service (BaaS) infrastructure for banks and platforms. Its Pro API lets customers programmatically issue physical, virtual,
+  single-use and specialized cards (travel, fleet, benefits, insurance-claim), apply card controls and advanced limits, retrieve transactions
+  and accounting data, manage receipts, projects, teams and statements, and subscribe to real-time callbacks. Pliant is PCI DSS certified, ISO/IEC
+  27001:2022 certified and holds an EU e-money license, with customers including BMW, Decathlon, Deutsche Telekom and Commerzbank.
+
 url: https://raw.githubusercontent.com/api-evangelist/pliant/refs/heads/main/apis.yml
+
 x-type: company
+
 x-source: vc-portfolio
+
 x-backed-by:
 - speedinvest
+
 x-tier: stub
+
 x-tier-reason: portfolio-lead
+
 deliveryModel:
   model: saas
   open_source: false
@@ -29,6 +32,7 @@ deliveryModel:
   - pricing
   generated: '2026-08-28'
   method: derived
+
 accessModel:
   pricing: unknown
   onboarding: self-serve
@@ -41,10 +45,15 @@ accessModel:
   - authentication
   generated: '2026-07-22'
   method: derived
+
 specificationVersion: '0.23'
+
 image: https://a.storyblok.com/f/169635/1200x630/92b10eaf7c/pliant-og-image.png
+
 created: '2026-07-17'
+
 modified: '2026-07-20'
+
 tags:
 - Company
 - Payments
@@ -57,6 +66,7 @@ tags:
 - Banking as a Service
 - Travel
 - Accounting
+
 tags_raw:
 - Company
 - Payments
@@ -69,56 +79,28 @@ tags_raw:
 - Banking as a Service
 - Travel
 - Accounting
-apis:
-- name: Pliant Pro API (Customer)
-  description: >-
-    Pliant's Pro API enables customers to access Pliant credit card data and
-    features programmatically — issue and manage cards, apply card controls and
-    limits, retrieve transactions and accounting data, manage receipts, projects,
-    teams, payments and statements, and subscribe to real-time event callbacks.
-    OAuth 2.0 client-credentials (Auth0) bearer-token auth; offset pagination;
-    header-based versioning via Pliant-API-Version.
-  humanURL: https://customer-api.getpliant.com
-  baseURL: https://partner-api.getpliant.com/api/
-  tags:
-  - Payments
-  - Card Issuing
-  - Corporate Cards
-  - Spend Management
-  properties:
-  - type: Documentation
-    url: https://customer-api.getpliant.com/docs/introduction
-  - type: APIReference
-    url: https://customer-api.getpliant.com/reference/list-organizations
-  - type: GettingStarted
-    url: https://customer-api.getpliant.com/docs/introduction
-  - type: Authentication
-    url: authentication/pliant-authentication.yml
-  - type: MCPServer
-    url: mcp/pliant-mcp.yml
-  - type: Webhooks
-    url: asyncapi/pliant-callbacks-webhooks.yml
-  - type: Sandbox
-    url: sandbox/pliant-sandbox.yml
-  - type: Conventions
-    url: conventions/pliant-conventions.yml
-  - type: ErrorCatalog
-    url: errors/pliant-error-codes.yml
-  - type: Lifecycle
-    url: lifecycle/pliant-lifecycle.yml
-  - type: ChangeLog
-    url: changelog/pliant-changelog.yml
-  - type: DataModel
-    url: data-model/pliant-data-model.yml
-  - type: Conformance
-    url: conformance/pliant-conformance.yml
-  - type: Components
-    url: components/pliant-components.yml
-  - type: AgentSkill
-    url: skills/_index.yml
-  - type: LLMsTxt
-    url: llms/pliant-llms.txt
+
+maintainers:
+- FN: Kin Lane
+  email: kin@apievangelist.com
+- FN: APIs.json
+  email: info@apis.io
+
 common:
+- type: AgenticAccess
+  url: agentic-access/pliant-agentic-access.yml
+- type: Spectral
+  url: rules/pliant-rules.yml
+- type: Vocabulary
+  url: vocabulary/pliant-vocabulary.yml
+- type: ErrorCatalog
+  url: errors/pliant-problem-types.yml
+- type: Hosts
+  url: hosts/pliant-hosts.yml
+- type: Vendors
+  url: vendors/pliant-vendors.yml
+- type: Newsroom
+  url: https://www.getpliant.com/en-us/press
 - type: VulnerabilityDisclosure
   url: security/pliant-vulnerability-disclosure.yml
 - type: Security
@@ -183,13 +165,64 @@ common:
   url: llms/pliant-llms.txt
 - type: DomainSecurity
   url: security/pliant-domain-security.yml
-maintainers:
-- FN: Kin Lane
-  email: kin@apievangelist.com
-- FN: APIs.json
-  email: info@apis.io
+
+apis:
+- name: Pliant Pro API (Customer)
+  description: Pliant's Pro API enables customers to access Pliant credit card data and features programmatically — issue and manage cards, apply
+    card controls and limits, retrieve transactions and accounting data, manage receipts, projects, teams, payments and statements, and subscribe
+    to real-time event callbacks. OAuth 2.0 client-credentials (Auth0) bearer-token auth; offset pagination; header-based versioning via Pliant-API-Version.
+  humanURL: https://customer-api.getpliant.com
+  baseURL: https://partner-api.getpliant.com/api/
+  tags:
+  - Payments
+  - Card Issuing
+  - Corporate Cards
+  - Spend Management
+  properties:
+  - url: openapi/pliant-customer-api-openapi.yml
+    type: OpenAPI
+  - type: Documentation
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: APIReference
+    url: https://customer-api.getpliant.com/reference/list-organizations
+  - type: GettingStarted
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: Authentication
+    url: authentication/pliant-authentication.yml
+  - type: MCPServer
+    url: mcp/pliant-mcp.yml
+  - type: Webhooks
+    url: asyncapi/pliant-callbacks-webhooks.yml
+  - type: Sandbox
+    url: sandbox/pliant-sandbox.yml
+  - type: Conventions
+    url: conventions/pliant-conventions.yml
+  - type: ErrorCatalog
+    url: errors/pliant-error-codes.yml
+  - type: Lifecycle
+    url: lifecycle/pliant-lifecycle.yml
+  - type: ChangeLog
+    url: changelog/pliant-changelog.yml
+  - type: DataModel
+    url: data-model/pliant-data-model.yml
+  - type: Conformance
+    url: conformance/pliant-conformance.yml
+  - type: Components
+    url: components/pliant-components.yml
+  - type: AgentSkill
+    url: skills/_index.yml
+  - type: LLMsTxt
+    url: llms/pliant-llms.txt
+  aid: pliant:pliant-pro-api-customer
+
 x-enrichment:
   date: '2026-07-20'
   status: enriched
   artifacts_added: 17
   pass: local-v1
+
+x-readme-harvest:
+  date: '2026-10-14'
+  ops: 131
+  tool: harvest-readme-openapi.py
+  portal: https://customer-api.getpliant.com

@@ -1,0 +1,105 @@
+generated: '2026-10-14'
+method: derived
+generator: derive-vocabulary.py
+source: openapi/pliant-customer-api-openapi.yml
+vocabulary:
+  name: Pliant Domain Vocabulary
+  description: 'Terms declared by Pliant''s own API contract: its resource groups, objects and enumerations, with the contract''s definitions.
+    Derived, not authored.'
+  version: '2026-10-14'
+  terms:
+  - term: Organizations
+    definition: This tag is for operations related to organizations
+    tags:
+    - Resource Group
+    source: openapi/pliant-customer-api-openapi.yml
+  - term: Card Accounts
+    definition: This tag is for operations related to card accounts
+    tags:
+    - Resource Group
+    source: openapi/pliant-customer-api-openapi.yml
+  - term: Cards
+    definition: This tag is for operations related to cards
+    tags:
+    - Resource Group
+    source: openapi/pliant-customer-api-openapi.yml
+  - term: Cardholders
+    definition: This tag is for operations related to cardholders
+    tags:
+    - Resource Group
+    source: openapi/pliant-customer-api-openapi.yml
+  - term: Card Controls
+    definition: This tag is for operations related to card controls
+    tags:
+    - Resource Group
+    source: openapi/pliant-customer-api-openapi.yml
+  - term: Card Sensitive Data
+    definition: This tag is for operations related to card sensitive data
+    tags:
+    - Resource Group
+    source: openapi/pliant-customer-api-openapi.yml
+  - term: Card Copilots
+    definition: This tag is for operations related to card copilots
+    tags:
+    - Resource Group
+    source: openapi/pliant-customer-api-openapi.yml
+  - term: Custom Fields
+    definition: This tag is for operations related to custom fields
+    tags:
+    - Resource Group
+    source: openapi/pliant-customer-api-openapi.yml
+  - term: Transactions
+    definition: This tag is for operations related to transactions
+    tags:
+    - Resource Group
+    source: openapi/pliant-customer-api-openapi.yml
+  - term: Receipts
+    definition: This tag is for operations related to receipts
+    tags:
+    - Resource Group
+    source: openapi/pliant-customer-api-openapi.yml
+  - term: Receipt Automatching
+    definition: This tag is for operations related to receipt automatching
+    tags:
+    - Resource Group
+    source: openapi/pliant-customer-api-openapi.yml
+  - term: Accounting Transactions
+    definition: This tag is for operations related to accounting transactions
+    tags:
+    - Resource Group
+    source: openapi/pliant-customer-api-openapi.yml
+  - term: Accounting Projects
+    definition: This tag is for operations related to accounting projects
+    tags:
+    - Resource Group
+    source: openapi/pliant-customer-api-openapi.yml
+  - term: Accounting Teams
+    definition: This tag is for operations related to accounting teams
+    tags:
+    - Resource Group
+    source: openapi/pliant-customer-api-openapi.yml
+  - term: Payments
+    definition: This tag is for operations related to payments
+    tags:
+    - Resource Group
+    source: openapi/pliant-customer-api-openapi.yml
+  - term: Statements
+    definition: This tag is for operations related to statements
+    tags:
+    - Resource Group
+    source: openapi/pliant-customer-api-openapi.yml
+  - term: Account Entries
+    definition: This tag is for operations related to account entries
+    tags:
+    - Resource Group
+    source: openapi/pliant-customer-api-openapi.yml
+  - term: Callbacks
+    definition: This tag is for operations related to callbacks
+    tags:
+    - Resource Group
+    source: openapi/pliant-customer-api-openapi.yml
+  - term: Test Data Generator (Sandbox-only)
+    definition: This tag is for operations related to test data generation
+    tags:
+    - Resource Group
+    source: openapi/pliant-customer-api-openapi.yml

@@ -7,11 +7,8 @@ compliance_program:
   - ISO/IEC 27001:2022
   licenses:
   - EU e-money license (EMI)
-  evidence: >-
-    Pliant states on its website that it is PCI DSS certified, ISO/IEC 27001:2022
-    certified, and EU e-money licensed. The Pro API additionally exposes dedicated
-    PCI-DSS certified endpoints on a separate host (pci-api.getpliant.com) for
-    partners that are themselves PCI-DSS certified.
+  evidence: Pliant states on its website that it is PCI DSS certified, ISO/IEC 27001:2022 certified, and EU e-money licensed. The Pro API additionally
+    exposes dedicated PCI-DSS certified endpoints on a separate host (pci-api.getpliant.com) for partners that are themselves PCI-DSS certified.
 standards:
 - id: oauth2
   conforms: true
@@ -33,8 +30,19 @@ standards:
   evidence: Errors use custom string error codes, not application/problem+json.
 - id: rfc8594-sunset-header
   conforms: false
-  evidence: Deprecation policy documented (>=6 months notice) but no RFC 8594 Sunset
-    headers.
+  evidence: Deprecation policy documented (>=6 months notice) but no RFC 8594 Sunset headers.
 - id: oidc-discovery
   conforms: false
   evidence: No /.well-known/openid-configuration served on the API host.
+- id: openapi-3.0
+  conforms: true
+  evidence: the document declares 3.0.1
+- id: rfc9457
+  conforms: false
+  evidence: no response declares application/problem+json
+- id: idempotency
+  conforms: false
+  evidence: no idempotency key parameter on mutating operations
+- id: pagination
+  conforms: true
+  evidence: list operations take limit, page

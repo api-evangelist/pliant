@@ -1,0 +1,80 @@
+generated: '2026-10-14'
+method: derived
+generator: derive-problem-types.py
+source:
+- openapi/pliant-customer-api-openapi.yml
+format: custom
+envelope:
+  media_type: application/json
+  schema: schema
+coverage:
+  operations: 131
+  statuses_declared: 9
+problems:
+- status: 400
+  title: Bad Request
+  description: Bad Request - Cannot deactivate the default card account.
+  operations: 105
+  media_types:
+  - application/json
+  schema: schema
+- status: 401
+  title: Unauthorized
+  description: Unauthorized
+  operations: 118
+  media_types:
+  - application/json
+  schema: schema
+- status: 403
+  title: Forbidden
+  description: Forbidden
+  operations: 118
+  media_types:
+  - application/json
+  schema: schema
+- status: 404
+  title: Not Found
+  description: Not Found. The requested resource could not be found.
+  operations: 73
+  media_types:
+  - application/json
+  schema: schema
+- status: 409
+  title: Conflict
+  description: Conflict. The request could not be completed due to a conflict with the current state of the resource.
+    You may retry the call.
+  operations: 6
+  media_types:
+  - application/json
+  schema: schema
+- status: 418
+  title: I'm a Teapot
+  description: Upload failed because transaction does not allow adding a receipt (`receiptUploadEnabled` is set
+    to `false`)
+  operations: 1
+  media_types:
+  - application/json
+  schema: null
+- status: 422
+  title: Unprocessable Content
+  description: Unprocessable Content. The request could not be completed due to contents of the request. The syntax
+    of the request content was correct.
+  operations: 4
+  media_types:
+  - application/json
+  schema: schema
+- status: 429
+  title: Too Many Requests
+  description: Too Many Requests. The API consumer has sent too many requests in a given amount of time. Please
+    check our [API guidelines](/docs/pliant-api
+  operations: 70
+  media_types:
+  - application/json
+  schema: null
+- status: 500
+  title: Internal Server Error
+  description: Internal Server Error
+  operations: 118
+  media_types:
+  - application/json
+  schema: schema
