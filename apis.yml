@@ -167,20 +167,16 @@ common:
   url: security/pliant-domain-security.yml
 
 apis:
-- name: Pliant Pro API (Customer)
-  description: Pliant's Pro API enables customers to access Pliant credit card data and features programmatically — issue and manage cards, apply
-    card controls and limits, retrieve transactions and accounting data, manage receipts, projects, teams, payments and statements, and subscribe
-    to real-time event callbacks. OAuth 2.0 client-credentials (Auth0) bearer-token auth; offset pagination; header-based versioning via Pliant-API-Version.
+- aid: pliant:pliant-account-entries-api
+  name: Pliant Account Entries API
+  description: This tag is for operations related to account entries
   humanURL: https://customer-api.getpliant.com
   baseURL: https://partner-api.getpliant.com/api/
   tags:
-  - Payments
-  - Card Issuing
-  - Corporate Cards
-  - Spend Management
+  - Account Entries
   properties:
-  - url: openapi/pliant-customer-api-openapi.yml
-    type: OpenAPI
+  - type: OpenAPI
+    url: openapi/pliant-account-entries-api-openapi.yml
   - type: Documentation
     url: https://customer-api.getpliant.com/docs/introduction
   - type: APIReference
@@ -189,8 +185,6 @@ apis:
     url: https://customer-api.getpliant.com/docs/introduction
   - type: Authentication
     url: authentication/pliant-authentication.yml
-  - type: MCPServer
-    url: mcp/pliant-mcp.yml
   - type: Webhooks
     url: asyncapi/pliant-callbacks-webhooks.yml
   - type: Sandbox
@@ -209,12 +203,692 @@ apis:
     url: conformance/pliant-conformance.yml
   - type: Components
     url: components/pliant-components.yml
-  - type: AgentSkill
-    url: skills/_index.yml
   - type: LLMsTxt
     url: llms/pliant-llms.txt
-  aid: pliant:pliant-pro-api-customer
-
+- aid: pliant:pliant-accounting-projects-api
+  name: Pliant Accounting Projects API
+  description: This tag is for operations related to accounting projects
+  humanURL: https://customer-api.getpliant.com
+  baseURL: https://partner-api.getpliant.com/api/
+  tags:
+  - Accounting Projects
+  properties:
+  - type: OpenAPI
+    url: openapi/pliant-accounting-projects-api-openapi.yml
+  - type: Documentation
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: APIReference
+    url: https://customer-api.getpliant.com/reference/list-organizations
+  - type: GettingStarted
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: Authentication
+    url: authentication/pliant-authentication.yml
+  - type: Webhooks
+    url: asyncapi/pliant-callbacks-webhooks.yml
+  - type: Sandbox
+    url: sandbox/pliant-sandbox.yml
+  - type: Conventions
+    url: conventions/pliant-conventions.yml
+  - type: ErrorCatalog
+    url: errors/pliant-error-codes.yml
+  - type: Lifecycle
+    url: lifecycle/pliant-lifecycle.yml
+  - type: ChangeLog
+    url: changelog/pliant-changelog.yml
+  - type: DataModel
+    url: data-model/pliant-data-model.yml
+  - type: Conformance
+    url: conformance/pliant-conformance.yml
+  - type: Components
+    url: components/pliant-components.yml
+  - type: LLMsTxt
+    url: llms/pliant-llms.txt
+- aid: pliant:pliant-accounting-teams-api
+  name: Pliant Accounting Teams API
+  description: This tag is for operations related to accounting teams
+  humanURL: https://customer-api.getpliant.com
+  baseURL: https://partner-api.getpliant.com/api/
+  tags:
+  - Accounting Teams
+  properties:
+  - type: OpenAPI
+    url: openapi/pliant-accounting-teams-api-openapi.yml
+  - type: Documentation
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: APIReference
+    url: https://customer-api.getpliant.com/reference/list-organizations
+  - type: GettingStarted
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: Authentication
+    url: authentication/pliant-authentication.yml
+  - type: Webhooks
+    url: asyncapi/pliant-callbacks-webhooks.yml
+  - type: Sandbox
+    url: sandbox/pliant-sandbox.yml
+  - type: Conventions
+    url: conventions/pliant-conventions.yml
+  - type: ErrorCatalog
+    url: errors/pliant-error-codes.yml
+  - type: Lifecycle
+    url: lifecycle/pliant-lifecycle.yml
+  - type: ChangeLog
+    url: changelog/pliant-changelog.yml
+  - type: DataModel
+    url: data-model/pliant-data-model.yml
+  - type: Conformance
+    url: conformance/pliant-conformance.yml
+  - type: Components
+    url: components/pliant-components.yml
+  - type: LLMsTxt
+    url: llms/pliant-llms.txt
+- aid: pliant:pliant-accounting-transactions-api
+  name: Pliant Accounting Transactions API
+  description: This tag is for operations related to accounting transactions
+  humanURL: https://customer-api.getpliant.com
+  baseURL: https://partner-api.getpliant.com/api/
+  tags:
+  - Accounting Transactions
+  properties:
+  - type: OpenAPI
+    url: openapi/pliant-accounting-transactions-api-openapi.yml
+  - type: Documentation
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: APIReference
+    url: https://customer-api.getpliant.com/reference/list-organizations
+  - type: GettingStarted
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: Authentication
+    url: authentication/pliant-authentication.yml
+  - type: Webhooks
+    url: asyncapi/pliant-callbacks-webhooks.yml
+  - type: Sandbox
+    url: sandbox/pliant-sandbox.yml
+  - type: Conventions
+    url: conventions/pliant-conventions.yml
+  - type: ErrorCatalog
+    url: errors/pliant-error-codes.yml
+  - type: Lifecycle
+    url: lifecycle/pliant-lifecycle.yml
+  - type: ChangeLog
+    url: changelog/pliant-changelog.yml
+  - type: DataModel
+    url: data-model/pliant-data-model.yml
+  - type: Conformance
+    url: conformance/pliant-conformance.yml
+  - type: Components
+    url: components/pliant-components.yml
+  - type: LLMsTxt
+    url: llms/pliant-llms.txt
+- aid: pliant:pliant-callbacks-api
+  name: Pliant Callbacks API
+  description: This tag is for operations related to callbacks
+  humanURL: https://customer-api.getpliant.com
+  baseURL: https://partner-api.getpliant.com/api/
+  tags:
+  - Callbacks
+  properties:
+  - type: OpenAPI
+    url: openapi/pliant-callbacks-api-openapi.yml
+  - type: Documentation
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: APIReference
+    url: https://customer-api.getpliant.com/reference/list-organizations
+  - type: GettingStarted
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: Authentication
+    url: authentication/pliant-authentication.yml
+  - type: Webhooks
+    url: asyncapi/pliant-callbacks-webhooks.yml
+  - type: Sandbox
+    url: sandbox/pliant-sandbox.yml
+  - type: Conventions
+    url: conventions/pliant-conventions.yml
+  - type: ErrorCatalog
+    url: errors/pliant-error-codes.yml
+  - type: Lifecycle
+    url: lifecycle/pliant-lifecycle.yml
+  - type: ChangeLog
+    url: changelog/pliant-changelog.yml
+  - type: DataModel
+    url: data-model/pliant-data-model.yml
+  - type: Conformance
+    url: conformance/pliant-conformance.yml
+  - type: Components
+    url: components/pliant-components.yml
+  - type: LLMsTxt
+    url: llms/pliant-llms.txt
+- aid: pliant:pliant-card-accounts-api
+  name: Pliant Card Accounts API
+  description: This tag is for operations related to card accounts
+  humanURL: https://customer-api.getpliant.com
+  baseURL: https://partner-api.getpliant.com/api/
+  tags:
+  - Card Accounts
+  properties:
+  - type: OpenAPI
+    url: openapi/pliant-card-accounts-api-openapi.yml
+  - type: Documentation
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: APIReference
+    url: https://customer-api.getpliant.com/reference/list-organizations
+  - type: GettingStarted
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: Authentication
+    url: authentication/pliant-authentication.yml
+  - type: Webhooks
+    url: asyncapi/pliant-callbacks-webhooks.yml
+  - type: Sandbox
+    url: sandbox/pliant-sandbox.yml
+  - type: Conventions
+    url: conventions/pliant-conventions.yml
+  - type: ErrorCatalog
+    url: errors/pliant-error-codes.yml
+  - type: Lifecycle
+    url: lifecycle/pliant-lifecycle.yml
+  - type: ChangeLog
+    url: changelog/pliant-changelog.yml
+  - type: DataModel
+    url: data-model/pliant-data-model.yml
+  - type: Conformance
+    url: conformance/pliant-conformance.yml
+  - type: Components
+    url: components/pliant-components.yml
+  - type: LLMsTxt
+    url: llms/pliant-llms.txt
+- aid: pliant:pliant-card-controls-api
+  name: Pliant Card Controls API
+  description: This tag is for operations related to card controls
+  humanURL: https://customer-api.getpliant.com
+  baseURL: https://partner-api.getpliant.com/api/
+  tags:
+  - Card Controls
+  properties:
+  - type: OpenAPI
+    url: openapi/pliant-card-controls-api-openapi.yml
+  - type: Documentation
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: APIReference
+    url: https://customer-api.getpliant.com/reference/list-organizations
+  - type: GettingStarted
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: Authentication
+    url: authentication/pliant-authentication.yml
+  - type: Webhooks
+    url: asyncapi/pliant-callbacks-webhooks.yml
+  - type: Sandbox
+    url: sandbox/pliant-sandbox.yml
+  - type: Conventions
+    url: conventions/pliant-conventions.yml
+  - type: ErrorCatalog
+    url: errors/pliant-error-codes.yml
+  - type: Lifecycle
+    url: lifecycle/pliant-lifecycle.yml
+  - type: ChangeLog
+    url: changelog/pliant-changelog.yml
+  - type: DataModel
+    url: data-model/pliant-data-model.yml
+  - type: Conformance
+    url: conformance/pliant-conformance.yml
+  - type: Components
+    url: components/pliant-components.yml
+  - type: LLMsTxt
+    url: llms/pliant-llms.txt
+- aid: pliant:pliant-card-copilots-api
+  name: Pliant Card Copilots API
+  description: This tag is for operations related to card copilots
+  humanURL: https://customer-api.getpliant.com
+  baseURL: https://partner-api.getpliant.com/api/
+  tags:
+  - Card Copilots
+  properties:
+  - type: OpenAPI
+    url: openapi/pliant-card-copilots-api-openapi.yml
+  - type: Documentation
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: APIReference
+    url: https://customer-api.getpliant.com/reference/list-organizations
+  - type: GettingStarted
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: Authentication
+    url: authentication/pliant-authentication.yml
+  - type: Webhooks
+    url: asyncapi/pliant-callbacks-webhooks.yml
+  - type: Sandbox
+    url: sandbox/pliant-sandbox.yml
+  - type: Conventions
+    url: conventions/pliant-conventions.yml
+  - type: ErrorCatalog
+    url: errors/pliant-error-codes.yml
+  - type: Lifecycle
+    url: lifecycle/pliant-lifecycle.yml
+  - type: ChangeLog
+    url: changelog/pliant-changelog.yml
+  - type: DataModel
+    url: data-model/pliant-data-model.yml
+  - type: Conformance
+    url: conformance/pliant-conformance.yml
+  - type: Components
+    url: components/pliant-components.yml
+  - type: LLMsTxt
+    url: llms/pliant-llms.txt
+- aid: pliant:pliant-card-sensitive-data-api
+  name: Pliant Card Sensitive Data API
+  description: This tag is for operations related to card sensitive data
+  humanURL: https://customer-api.getpliant.com
+  baseURL: https://partner-api.getpliant.com/api/
+  tags:
+  - Card Sensitive Data
+  properties:
+  - type: OpenAPI
+    url: openapi/pliant-card-sensitive-data-api-openapi.yml
+  - type: Documentation
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: APIReference
+    url: https://customer-api.getpliant.com/reference/list-organizations
+  - type: GettingStarted
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: Authentication
+    url: authentication/pliant-authentication.yml
+  - type: Webhooks
+    url: asyncapi/pliant-callbacks-webhooks.yml
+  - type: Sandbox
+    url: sandbox/pliant-sandbox.yml
+  - type: Conventions
+    url: conventions/pliant-conventions.yml
+  - type: ErrorCatalog
+    url: errors/pliant-error-codes.yml
+  - type: Lifecycle
+    url: lifecycle/pliant-lifecycle.yml
+  - type: ChangeLog
+    url: changelog/pliant-changelog.yml
+  - type: DataModel
+    url: data-model/pliant-data-model.yml
+  - type: Conformance
+    url: conformance/pliant-conformance.yml
+  - type: Components
+    url: components/pliant-components.yml
+  - type: LLMsTxt
+    url: llms/pliant-llms.txt
+- aid: pliant:pliant-cardholders-api
+  name: Pliant Cardholders API
+  description: This tag is for operations related to cardholders
+  humanURL: https://customer-api.getpliant.com
+  baseURL: https://partner-api.getpliant.com/api/
+  tags:
+  - Cardholders
+  properties:
+  - type: OpenAPI
+    url: openapi/pliant-cardholders-api-openapi.yml
+  - type: Documentation
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: APIReference
+    url: https://customer-api.getpliant.com/reference/list-organizations
+  - type: GettingStarted
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: Authentication
+    url: authentication/pliant-authentication.yml
+  - type: Webhooks
+    url: asyncapi/pliant-callbacks-webhooks.yml
+  - type: Sandbox
+    url: sandbox/pliant-sandbox.yml
+  - type: Conventions
+    url: conventions/pliant-conventions.yml
+  - type: ErrorCatalog
+    url: errors/pliant-error-codes.yml
+  - type: Lifecycle
+    url: lifecycle/pliant-lifecycle.yml
+  - type: ChangeLog
+    url: changelog/pliant-changelog.yml
+  - type: DataModel
+    url: data-model/pliant-data-model.yml
+  - type: Conformance
+    url: conformance/pliant-conformance.yml
+  - type: Components
+    url: components/pliant-components.yml
+  - type: LLMsTxt
+    url: llms/pliant-llms.txt
+- aid: pliant:pliant-cards-api
+  name: Pliant Cards API
+  description: This tag is for operations related to cards
+  humanURL: https://customer-api.getpliant.com
+  baseURL: https://partner-api.getpliant.com/api/
+  tags:
+  - Cards
+  properties:
+  - type: OpenAPI
+    url: openapi/pliant-cards-api-openapi.yml
+  - type: Documentation
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: APIReference
+    url: https://customer-api.getpliant.com/reference/list-organizations
+  - type: GettingStarted
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: Authentication
+    url: authentication/pliant-authentication.yml
+  - type: Webhooks
+    url: asyncapi/pliant-callbacks-webhooks.yml
+  - type: Sandbox
+    url: sandbox/pliant-sandbox.yml
+  - type: Conventions
+    url: conventions/pliant-conventions.yml
+  - type: ErrorCatalog
+    url: errors/pliant-error-codes.yml
+  - type: Lifecycle
+    url: lifecycle/pliant-lifecycle.yml
+  - type: ChangeLog
+    url: changelog/pliant-changelog.yml
+  - type: DataModel
+    url: data-model/pliant-data-model.yml
+  - type: Conformance
+    url: conformance/pliant-conformance.yml
+  - type: Components
+    url: components/pliant-components.yml
+  - type: LLMsTxt
+    url: llms/pliant-llms.txt
+- aid: pliant:pliant-custom-fields-api
+  name: Pliant Custom Fields API
+  description: This tag is for operations related to custom fields
+  humanURL: https://customer-api.getpliant.com
+  baseURL: https://partner-api.getpliant.com/api/
+  tags:
+  - Custom Fields
+  properties:
+  - type: OpenAPI
+    url: openapi/pliant-custom-fields-api-openapi.yml
+  - type: Documentation
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: APIReference
+    url: https://customer-api.getpliant.com/reference/list-organizations
+  - type: GettingStarted
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: Authentication
+    url: authentication/pliant-authentication.yml
+  - type: Webhooks
+    url: asyncapi/pliant-callbacks-webhooks.yml
+  - type: Sandbox
+    url: sandbox/pliant-sandbox.yml
+  - type: Conventions
+    url: conventions/pliant-conventions.yml
+  - type: ErrorCatalog
+    url: errors/pliant-error-codes.yml
+  - type: Lifecycle
+    url: lifecycle/pliant-lifecycle.yml
+  - type: ChangeLog
+    url: changelog/pliant-changelog.yml
+  - type: DataModel
+    url: data-model/pliant-data-model.yml
+  - type: Conformance
+    url: conformance/pliant-conformance.yml
+  - type: Components
+    url: components/pliant-components.yml
+  - type: LLMsTxt
+    url: llms/pliant-llms.txt
+- aid: pliant:pliant-organizations-api
+  name: Pliant Organizations API
+  description: This tag is for operations related to organizations
+  humanURL: https://customer-api.getpliant.com
+  baseURL: https://partner-api.getpliant.com/api/
+  tags:
+  - Organizations
+  properties:
+  - type: OpenAPI
+    url: openapi/pliant-organizations-api-openapi.yml
+  - type: Documentation
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: APIReference
+    url: https://customer-api.getpliant.com/reference/list-organizations
+  - type: GettingStarted
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: Authentication
+    url: authentication/pliant-authentication.yml
+  - type: Webhooks
+    url: asyncapi/pliant-callbacks-webhooks.yml
+  - type: Sandbox
+    url: sandbox/pliant-sandbox.yml
+  - type: Conventions
+    url: conventions/pliant-conventions.yml
+  - type: ErrorCatalog
+    url: errors/pliant-error-codes.yml
+  - type: Lifecycle
+    url: lifecycle/pliant-lifecycle.yml
+  - type: ChangeLog
+    url: changelog/pliant-changelog.yml
+  - type: DataModel
+    url: data-model/pliant-data-model.yml
+  - type: Conformance
+    url: conformance/pliant-conformance.yml
+  - type: Components
+    url: components/pliant-components.yml
+  - type: LLMsTxt
+    url: llms/pliant-llms.txt
+- aid: pliant:pliant-payments-api
+  name: Pliant Payments API
+  description: This tag is for operations related to payments
+  humanURL: https://customer-api.getpliant.com
+  baseURL: https://partner-api.getpliant.com/api/
+  tags:
+  - Payments
+  properties:
+  - type: OpenAPI
+    url: openapi/pliant-payments-api-openapi.yml
+  - type: Documentation
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: APIReference
+    url: https://customer-api.getpliant.com/reference/list-organizations
+  - type: GettingStarted
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: Authentication
+    url: authentication/pliant-authentication.yml
+  - type: Webhooks
+    url: asyncapi/pliant-callbacks-webhooks.yml
+  - type: Sandbox
+    url: sandbox/pliant-sandbox.yml
+  - type: Conventions
+    url: conventions/pliant-conventions.yml
+  - type: ErrorCatalog
+    url: errors/pliant-error-codes.yml
+  - type: Lifecycle
+    url: lifecycle/pliant-lifecycle.yml
+  - type: ChangeLog
+    url: changelog/pliant-changelog.yml
+  - type: DataModel
+    url: data-model/pliant-data-model.yml
+  - type: Conformance
+    url: conformance/pliant-conformance.yml
+  - type: Components
+    url: components/pliant-components.yml
+  - type: LLMsTxt
+    url: llms/pliant-llms.txt
+- aid: pliant:pliant-receipt-automatching-api
+  name: Pliant Receipt Automatching API
+  description: This tag is for operations related to receipt automatching
+  humanURL: https://customer-api.getpliant.com
+  baseURL: https://partner-api.getpliant.com/api/
+  tags:
+  - Receipt Automatching
+  properties:
+  - type: OpenAPI
+    url: openapi/pliant-receipt-automatching-api-openapi.yml
+  - type: Documentation
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: APIReference
+    url: https://customer-api.getpliant.com/reference/list-organizations
+  - type: GettingStarted
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: Authentication
+    url: authentication/pliant-authentication.yml
+  - type: Webhooks
+    url: asyncapi/pliant-callbacks-webhooks.yml
+  - type: Sandbox
+    url: sandbox/pliant-sandbox.yml
+  - type: Conventions
+    url: conventions/pliant-conventions.yml
+  - type: ErrorCatalog
+    url: errors/pliant-error-codes.yml
+  - type: Lifecycle
+    url: lifecycle/pliant-lifecycle.yml
+  - type: ChangeLog
+    url: changelog/pliant-changelog.yml
+  - type: DataModel
+    url: data-model/pliant-data-model.yml
+  - type: Conformance
+    url: conformance/pliant-conformance.yml
+  - type: Components
+    url: components/pliant-components.yml
+  - type: LLMsTxt
+    url: llms/pliant-llms.txt
+- aid: pliant:pliant-receipts-api
+  name: Pliant Receipts API
+  description: This tag is for operations related to receipts
+  humanURL: https://customer-api.getpliant.com
+  baseURL: https://partner-api.getpliant.com/api/
+  tags:
+  - Receipts
+  properties:
+  - type: OpenAPI
+    url: openapi/pliant-receipts-api-openapi.yml
+  - type: Documentation
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: APIReference
+    url: https://customer-api.getpliant.com/reference/list-organizations
+  - type: GettingStarted
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: Authentication
+    url: authentication/pliant-authentication.yml
+  - type: Webhooks
+    url: asyncapi/pliant-callbacks-webhooks.yml
+  - type: Sandbox
+    url: sandbox/pliant-sandbox.yml
+  - type: Conventions
+    url: conventions/pliant-conventions.yml
+  - type: ErrorCatalog
+    url: errors/pliant-error-codes.yml
+  - type: Lifecycle
+    url: lifecycle/pliant-lifecycle.yml
+  - type: ChangeLog
+    url: changelog/pliant-changelog.yml
+  - type: DataModel
+    url: data-model/pliant-data-model.yml
+  - type: Conformance
+    url: conformance/pliant-conformance.yml
+  - type: Components
+    url: components/pliant-components.yml
+  - type: LLMsTxt
+    url: llms/pliant-llms.txt
+- aid: pliant:pliant-statements-api
+  name: Pliant Statements API
+  description: This tag is for operations related to statements
+  humanURL: https://customer-api.getpliant.com
+  baseURL: https://partner-api.getpliant.com/api/
+  tags:
+  - Statements
+  properties:
+  - type: OpenAPI
+    url: openapi/pliant-statements-api-openapi.yml
+  - type: Documentation
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: APIReference
+    url: https://customer-api.getpliant.com/reference/list-organizations
+  - type: GettingStarted
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: Authentication
+    url: authentication/pliant-authentication.yml
+  - type: Webhooks
+    url: asyncapi/pliant-callbacks-webhooks.yml
+  - type: Sandbox
+    url: sandbox/pliant-sandbox.yml
+  - type: Conventions
+    url: conventions/pliant-conventions.yml
+  - type: ErrorCatalog
+    url: errors/pliant-error-codes.yml
+  - type: Lifecycle
+    url: lifecycle/pliant-lifecycle.yml
+  - type: ChangeLog
+    url: changelog/pliant-changelog.yml
+  - type: DataModel
+    url: data-model/pliant-data-model.yml
+  - type: Conformance
+    url: conformance/pliant-conformance.yml
+  - type: Components
+    url: components/pliant-components.yml
+  - type: LLMsTxt
+    url: llms/pliant-llms.txt
+- aid: pliant:pliant-test-data-generator-sandbox-only-api
+  name: Pliant Test Data Generator (Sandbox-only) API
+  description: This tag is for operations related to test data generation
+  humanURL: https://customer-api.getpliant.com
+  baseURL: https://partner-api.getpliant.com/api/
+  tags:
+  - Test Data Generator (Sandbox-only)
+  properties:
+  - type: OpenAPI
+    url: openapi/pliant-test-data-generator-sandbox-only-api-openapi.yml
+  - type: Documentation
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: APIReference
+    url: https://customer-api.getpliant.com/reference/list-organizations
+  - type: GettingStarted
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: Authentication
+    url: authentication/pliant-authentication.yml
+  - type: Webhooks
+    url: asyncapi/pliant-callbacks-webhooks.yml
+  - type: Sandbox
+    url: sandbox/pliant-sandbox.yml
+  - type: Conventions
+    url: conventions/pliant-conventions.yml
+  - type: ErrorCatalog
+    url: errors/pliant-error-codes.yml
+  - type: Lifecycle
+    url: lifecycle/pliant-lifecycle.yml
+  - type: ChangeLog
+    url: changelog/pliant-changelog.yml
+  - type: DataModel
+    url: data-model/pliant-data-model.yml
+  - type: Conformance
+    url: conformance/pliant-conformance.yml
+  - type: Components
+    url: components/pliant-components.yml
+  - type: LLMsTxt
+    url: llms/pliant-llms.txt
+- aid: pliant:pliant-transactions-api
+  name: Pliant Transactions API
+  description: This tag is for operations related to transactions
+  humanURL: https://customer-api.getpliant.com
+  baseURL: https://partner-api.getpliant.com/api/
+  tags:
+  - Transactions
+  properties:
+  - type: OpenAPI
+    url: openapi/pliant-transactions-api-openapi.yml
+  - type: Documentation
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: APIReference
+    url: https://customer-api.getpliant.com/reference/list-organizations
+  - type: GettingStarted
+    url: https://customer-api.getpliant.com/docs/introduction
+  - type: Authentication
+    url: authentication/pliant-authentication.yml
+  - type: Webhooks
+    url: asyncapi/pliant-callbacks-webhooks.yml
+  - type: Sandbox
+    url: sandbox/pliant-sandbox.yml
+  - type: Conventions
+    url: conventions/pliant-conventions.yml
+  - type: ErrorCatalog
+    url: errors/pliant-error-codes.yml
+  - type: Lifecycle
+    url: lifecycle/pliant-lifecycle.yml
+  - type: ChangeLog
+    url: changelog/pliant-changelog.yml
+  - type: DataModel
+    url: data-model/pliant-data-model.yml
+  - type: Conformance
+    url: conformance/pliant-conformance.yml
+  - type: Components
+    url: components/pliant-components.yml
+  - type: LLMsTxt
+    url: llms/pliant-llms.txt
 x-enrichment:
   date: '2026-07-20'
   status: enriched

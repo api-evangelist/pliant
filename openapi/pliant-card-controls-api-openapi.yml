@@ -1,0 +1,539 @@
+openapi: 3.2.0
+info:
+  contact:
+    name: API Support
+    email: support@getpliant.com
+    url: https://www.getpliant.com
+  title: Pliant Customer Card Controls API
+  description: Pliant Customer API
+  version: 2.1.0
+  license:
+    name: MIT
+    url: https://opensource.org/license/MIT
+servers:
+- url: https://partner-api.getpliant.com/api
+  description: Pliant Production Server
+- url: https://sandbox.partner-api.getpliant.com/api
+  description: Pliant Sandbox Server
+- url: https://pci-api.getpliant.com
+  description: PCI Vault Production Server
+- url: https://pci-sandbox.partner-api.getpliant.com
+  description: PCI Vault Sandbox Server
+security:
+- bearerAuth: []
+tags:
+- name: Card Controls
+  description: This tag is for operations related to card controls
+paths:
+  /cards/{cardId}/card-controls:
+    put:
+      summary: Change Card Controls
+      description: Updates card controls for a single card. If the card control does not exist, it will be created. If the card control exists, it will be updated with the given values. Thus when updating, you have to provide all the values for the card control you want to set. Missing or not provided values are deleted if they exist.
+      tags:
+      - Card Controls
+      operationId: update-card-controls-by-card
+      parameters:
+      - name: cardId
+        in: path
+        required: true
+        description: The unique identifier of the card.
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+              - type: object
+                properties:
+                  categories:
+                    type:
+                    - object
+                    - 'null'
+                    required:
+                    - type
+                    - values
+                    - restriction
+                    properties:
+                      type:
+                        type: string
+                        enum:
+                        - MCC
+                        - CATEGORY
+                        description: Type of the category control to use. `MCC` represents the merchant category code as defined by card networks, whereas `CATEGORY` is a Pliant internal grouping of transactions done with a credit card. Both values can be found in the response from the [transaction details endpoint](./get-transactions-detail-batch) or in our [guide section](/docs/card-controls-1).
+                      values:
+                        type: array
+                        items:
+                          type: string
+                        description: Values for this category control which should be allowed or blocked. Can be either a list of `MCCs` or Pliant's payment categories. Both values can be found in the response from the [transaction details endpoint](./get-transactions-detail-batch) or in our [guide section](/docs/card-controls-1).
+                      restriction:
+                        type: string
+                        enum:
+                        - ALLOWED
+                        - BLOCKED
+                  merchants:
+                    type:
+                    - object
+                    - 'null'
+                    required:
+                    - type
+                    - values
+                    - restriction
+                    properties:
+                      type:
+                        type: string
+                        enum:
+                        - MATCH_TERM
+                        - MID
+                        description: Type of the merchant control to use. `MATCH_TERM` is the merchant name to match. Matching here works by checking if the provided term is part of a merchant name, the check is case insensitive. `MID` represents the merchant identifier as assigned by the card network. It can be found in the [transaction details response](./get-transactions-detail-batch). There it is named `mid`.
+                      values:
+                        type: array
+                        items:
+                          type: string
+                        description: Values for this merchant control which should be allowed or blocked.
+                      restriction:
+                        type: string
+                        enum:
+                        - ALLOWED
+                        - BLOCKED
+                  dates:
+                    type:
+                    - object
+                    - 'null'
+                    required:
+                    - type
+                    - values
+                    - timezone
+                    - restriction
+                    properties:
+                      type:
+                        type: string
+                        enum:
+                        - YEARLY
+                        - MONTHLY
+                        - WEEKLY
+                        - FIXED
+                        description: Type of the date control to use. `YEARLY`, `MONTHLY` and `WEEKLY` are recurring dates, whereas `FIXED` is a fixed date range.
+                      values:
+                        type: array
+                        items:
+                          type: string
+                        description: 'Values for this date control which should be allowed or blocked.
+
+                          `YEARLY`, `MONTHLY` and `FIXED` each take exactly one value. A second value is rejected.
+
+                          `WEEKLY` takes one or more weekdays.
+
+                          Patterns:
+
+                          `YEARLY`: one range `dd.MM-dd.MM`.
+
+                          `MONTHLY`: one range `dd-dd`. Days are `01` to `28`, or `last`, `last-1` or `last-2` for the last day of the month or one to two days before.
+
+                          `WEEKLY`: one or more of `MONDAY`, `TUESDAY`, `WEDNESDAY`, `THURSDAY`, `FRIDAY`, `SATURDAY`, `SUNDAY`.
+
+                          `FIXED`: one range `dd.MM.yyyy-dd.MM.yyyy`.
+
+                          To block transactions at the end of the month, use `MONTHLY` with the single value `20-last`.
+
+                          '
+                      timezone:
+                        type: string
+                        description: Timezone to use for the date control. A list of valid timezones can be found in our [guide section](/docs/card-controls-1).
+                      restriction:
+                        type: string
+                        enum:
+                        - ALLOWED
+                        - BLOCKED
+                  times:
+                    type:
+                    - object
+                    - 'null'
+                    required:
+                    - type
+                    - values
+                    - timezone
+                    - restriction
+                    properties:
+                      type:
+                        type: string
+                        enum:
+                        - TIMERANGE
+                        description: Type of the time control. Currently only `TIMERANGE` is supported.
+                      values:
+                        type: array
+                        items:
+                          type: string
+                        description: 'Only one time range is allowed for this control. The allowed pattern is `HH:mm-HH:mm`.
+
+                          So for example if you want to block all transactions between 10pm and 6am, you can use `TIMERANGE` with the value `22:00-06:00`.
+
+                          '
+                      timezone:
+                        type: string
+                        description: Timezone to use for the time control. A list of valid timezones can be found in our [guide section](/docs/card-controls-1).
+                      restriction:
+                        type: string
+                        enum:
+                        - ALLOWED
+                        - BLOCKED
+                  locations:
+                    type:
+                    - object
+                    - 'null'
+                    required:
+                    - type
+                    - values
+                    - restriction
+                    properties:
+                      type:
+                        type: string
+                        enum:
+                        - POSTAL_CODE
+                        - REGION
+                        description: 'Type of the location-based control.
+
+                          - `POSTAL_CODE`: Then `values` are postal codes
+
+                          - `REGION`: Then `values` are region IDs of your organization
+
+                          '
+                      values:
+                        type: array
+                        items:
+                          type: string
+                        description: 'Values for this location control which should be allowed or blocked.
+
+                          For `POSTAL_CODE`, each value is matched in full and case-insensitively against the merchant postal code. A shorter value is not a prefix, and `*` is not a wildcard: `68` matches only `68`, and `68*` matches only the literal `68*`.
+
+                          For `REGION`, each value is a region ID of your organization.
+
+                          If the transaction has no merchant postal code, this control does not decline it.
+
+                          Example: to block postal codes `12345` and `67890`, send both values with restriction `BLOCKED`.
+
+                          '
+                      restriction:
+                        type: string
+                        enum:
+                        - ALLOWED
+                        - BLOCKED
+                  countries:
+                    type:
+                    - object
+                    - 'null'
+                    required:
+                    - restriction
+                    - values
+                    description: 'Optional object defining country-based transaction restrictions.
+
+                      You can configure cards to either allow transactions only in specified countries (whitelist)
+
+                      or block transactions in specified countries (blacklist).
+
+                      Country codes must be valid ISO 3166-1 alpha-3 codes (e.g., `DEU`, `AUT`, `USA`).
+
+                      This control is not available for US-issued cards.
+
+                      '
+                    properties:
+                      restriction:
+                        type: string
+                        enum:
+                        - ALLOWED
+                        - BLOCKED
+                        description: 'Defines the restriction type for the country control.
+
+                          - `ALLOWED`: Only transactions in the listed countries are permitted (whitelist).
+
+                          - `BLOCKED`: Transactions in the listed countries are declined (blacklist).
+
+                          '
+                      values:
+                        type: array
+                        items:
+                          type: string
+                        description: 'List of ISO 3166-1 alpha-3 country codes (e.g., `DEU`, `AUT`, `USA`).
+
+                          At least one country code must be provided.
+
+                          '
+                  currencies:
+                    type:
+                    - object
+                    - 'null'
+                    required:
+                    - restriction
+                    - values
+                    description: 'Optional object defining currency-based transaction restrictions.
+
+                      You can configure cards to either allow transactions only in specified currencies (whitelist)
+
+                      or block transactions in specified currencies (blacklist).
+
+                      Currency codes must be valid ISO 4217 codes (e.g., `EUR`, `GBP`, `USD`).
+
+                      '
+                    properties:
+                      restriction:
+                        type: string
+                        enum:
+                        - ALLOWED
+                        - BLOCKED
+                        description: 'Defines the restriction type for the currency control.
+
+                          - `ALLOWED`: Only transactions in the listed currencies are permitted (whitelist).
+
+                          - `BLOCKED`: Transactions in the listed currencies are declined (blacklist).
+
+                          '
+                      values:
+                        type: array
+                        items:
+                          type: string
+                        description: 'List of ISO 4217 currency codes (e.g., `EUR`, `GBP`, `USD`).
+
+                          At least one currency code must be provided.
+
+                          '
+                  acceptanceMethods:
+                    type:
+                    - object
+                    - 'null'
+                    required:
+                    - type
+                    - values
+                    - restriction
+                    description: 'Optional object defining which acceptance methods are permitted.
+
+                      This control is an allow-list only. `restriction` must be `ALLOWED`.
+
+                      The methods in `values` are the only ones permitted; every other method is declined.
+
+                      There is no block-list. Do not send `BLOCKED`: it is not applied, and the methods in `values` are stored as the allowed set.
+
+                      '
+                    properties:
+                      type:
+                        type: string
+                        enum:
+                        - ACCEPTANCE_METHOD
+                        description: 'Type of the acceptance method control to use. Currently only `ACCEPTANCE_METHOD` is supported.
+
+                          '
+                      values:
+                        type: array
+                        items:
+                          type: string
+                          enum:
+                          - ONLINE
+                          - MOBILE_WALLET
+                          - MANUAL_ENTRY
+                          - CONTACTLESS
+                          - CHIP_DIP
+                          - NOT_AVAILABLE
+                          - MAGNETIC_STRIPE
+                          - OTHER
+                        description: "List of acceptance methods that are allowed for transactions. \nOnly the methods listed here will be permitted if this control is provided.\nPossible values:\n- `ONLINE`: Card-not-present transactions\n- `MOBILE_WALLET`: Payments via mobile wallets (e.g., Apple Pay, Google Pay)\n- `MANUAL_ENTRY`: Card number entered manually\n- `CONTACTLESS`: Tap-based payments\n- `CHIP_DIP`: Inserted chip transactions\n- `NOT_AVAILABLE`: Transactions where acceptance method information is unavailable\n- `MAGNETIC_STRIPE`: Swipe-based payments\n- `OTHER`: Any other unspecified acceptance method\n"
+                      restriction:
+                        type: string
+                        enum:
+                        - ALLOWED
+                        description: 'Must be `ALLOWED`. Only the methods in `values` are permitted.
+
+                          `BLOCKED` is not a supported restriction and does not block the methods in `values`.
+
+                          '
+      responses:
+        '204':
+          description: No Content. The card controls are saved when this response is returned.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+    get:
+      summary: List Card Controls
+      description: Returns the card controls for a single card, if it exists.
+      tags:
+      - Card Controls
+      operationId: get-card-controls-by-card
+      parameters:
+      - name: cardId
+        in: path
+        required: true
+        description: The unique identifier of the card.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/paths/~1cards~1{cardId}~1card-controls/put/requestBody/content/application~1json/schema/allOf/0'
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: This API uses oAuth2 with client credentials flow to [obtain the Bearer Token](/docs/authenticated-api-usage).
+      bearerFormat: JWT
+x-provenance:
+  method: searched
+  source: https://customer-api.getpliant.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://customer-api.getpliant.com/reference/activate-physical-card.md
+  - https://customer-api.getpliant.com/reference/assign-project-team.md
+  - https://customer-api.getpliant.com/reference/assign-to-team.md
+  - https://customer-api.getpliant.com/reference/bulk-upsert-subscriptions.md
+  - https://customer-api.getpliant.com/reference/card-pan-and-cvv-pci-vault.md
+  - https://customer-api.getpliant.com/reference/card-pan-tokenized-from-pci-proxy.md
+  - https://customer-api.getpliant.com/reference/claim-card-as-copilot.md
+  - https://customer-api.getpliant.com/reference/create-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-transfer.md
+  - https://customer-api.getpliant.com/reference/create-card-account.md
+  - https://customer-api.getpliant.com/reference/create-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-subscription.md
+  - https://customer-api.getpliant.com/reference/create-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/create-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/create-custom-field.md
+  - https://customer-api.getpliant.com/reference/create-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/create-project.md
+  - https://customer-api.getpliant.com/reference/create-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/create-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/create-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/create-team.md
+  - https://customer-api.getpliant.com/reference/create-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/deactivate-card-account.md
+  - https://customer-api.getpliant.com/reference/deactivate-cardholder.md
+  - https://customer-api.getpliant.com/reference/deactivate-team.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field.md
+  - https://customer-api.getpliant.com/reference/delete-project.md
+  - https://customer-api.getpliant.com/reference/delete-receipt.md
+  - https://customer-api.getpliant.com/reference/delete-subscription.md
+  - https://customer-api.getpliant.com/reference/delete-team.md
+  - https://customer-api.getpliant.com/reference/delete-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/generate-test-transactions-in-sandbox.md
+  - https://customer-api.getpliant.com/reference/get-account-entries.md
+  - https://customer-api.getpliant.com/reference/get-accounting-transactions-batch.md
+  - https://customer-api.getpliant.com/reference/get-available-cards.md
+  - https://customer-api.getpliant.com/reference/get-callback-details.md
+  - https://customer-api.getpliant.com/reference/get-callback-log.md
+  - https://customer-api.getpliant.com/reference/get-callback-subscriptions.md
+  - https://customer-api.getpliant.com/reference/get-callback.md
+  - https://customer-api.getpliant.com/reference/get-card-account-details.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts-available-currencies.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts.md
+  - https://customer-api.getpliant.com/reference/get-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/get-card-pin.md
+  - https://customer-api.getpliant.com/reference/get-cardholder-details.md
+  - https://customer-api.getpliant.com/reference/get-cards.md
+  - https://customer-api.getpliant.com/reference/get-custom-field-options.md
+  - https://customer-api.getpliant.com/reference/get-custom-fields.md
+  - https://customer-api.getpliant.com/reference/get-multiple-card-details.md
+  - https://customer-api.getpliant.com/reference/get-organization-details.md
+  - https://customer-api.getpliant.com/reference/get-otp-for-pci-widget.md
+  - https://customer-api.getpliant.com/reference/get-payments-detail.md
+  - https://customer-api.getpliant.com/reference/get-payments.md
+  - https://customer-api.getpliant.com/reference/get-projects.md
+  - https://customer-api.getpliant.com/reference/get-receipt-automatcher-status.md
+  - https://customer-api.getpliant.com/reference/get-receipt-detail.md
+  - https://customer-api.getpliant.com/reference/get-receipts.md
+  - https://customer-api.getpliant.com/reference/get-single-card-details.md
+  - https://customer-api.getpliant.com/reference/get-statement-csv.md
+  - https://customer-api.getpliant.com/reference/get-statement-detail.md
+  - https://customer-api.getpliant.com/reference/get-statementpdf.md
+  - https://customer-api.getpliant.com/reference/get-statements.md
+  - https://customer-api.getpliant.com/reference/get-teams.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail-batch.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail.md
+  - https://customer-api.getpliant.com/reference/get-transactions.md
+  - https://customer-api.getpliant.com/reference/invite-cardholders.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant-with-pci.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant.md
+  - https://customer-api.getpliant.com/reference/issue-card.md
+  - https://customer-api.getpliant.com/reference/list-cardholders.md
+  - https://customer-api.getpliant.com/reference/list-organizations.md
+  - https://customer-api.getpliant.com/reference/load-cards-batch.md
+  - https://customer-api.getpliant.com/reference/lock-card.md
+  - https://customer-api.getpliant.com/reference/metadata-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/receipt-as-merged-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-as-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-original.md
+  - https://customer-api.getpliant.com/reference/receipt-thumbnail.md
+  - https://customer-api.getpliant.com/reference/register-cardholders.md
+  - https://customer-api.getpliant.com/reference/remove-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cards-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/replace-card.md
+  - https://customer-api.getpliant.com/reference/resend-callbacks.md
+  - https://customer-api.getpliant.com/reference/search-callbacks.md
+  - https://customer-api.getpliant.com/reference/simulate-prefund-payment.md
+  - https://customer-api.getpliant.com/reference/simulate-transaction-status-transition.md
+  - https://customer-api.getpliant.com/reference/terminate-card.md
+  - https://customer-api.getpliant.com/reference/unassign-from-team.md
+  - https://customer-api.getpliant.com/reference/unassign-project-team.md
+  - https://customer-api.getpliant.com/reference/unlock-card.md
+  - https://customer-api.getpliant.com/reference/update-card-account.md
+  - https://customer-api.getpliant.com/reference/update-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/update-card-copilots.md
+  - https://customer-api.getpliant.com/reference/update-card-label.md
+  - https://customer-api.getpliant.com/reference/update-card-limit.md
+  - https://customer-api.getpliant.com/reference/update-card-validity-period.md
+  - https://customer-api.getpliant.com/reference/update-card.md
+  - https://customer-api.getpliant.com/reference/update-cardholders.md
+  - https://customer-api.getpliant.com/reference/update-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/update-custom-field.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-accounting-transaction.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-card.md
+  - https://customer-api.getpliant.com/reference/update-project.md
+  - https://customer-api.getpliant.com/reference/update-team.md
+  - https://customer-api.getpliant.com/reference/update-transaction-category.md
+  - https://customer-api.getpliant.com/reference/update-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status-batch.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status.md
+  - https://customer-api.getpliant.com/reference/update-transaction-receipt-upload.md
+  - https://customer-api.getpliant.com/reference/upload-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/upload-receipt.md
+  merge:
+    pages: 128
+    deduped: 452
+    conflicts_kept_first: 0

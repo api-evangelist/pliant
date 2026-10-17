@@ -1,0 +1,2436 @@
+openapi: 3.2.0
+info:
+  contact:
+    name: API Support
+    email: support@getpliant.com
+    url: https://www.getpliant.com
+  title: Pliant Customer Transactions API
+  description: Pliant Customer API
+  version: 2.1.0
+  license:
+    name: MIT
+    url: https://opensource.org/license/MIT
+servers:
+- url: https://partner-api.getpliant.com/api
+  description: Pliant Production Server
+- url: https://sandbox.partner-api.getpliant.com/api
+  description: Pliant Sandbox Server
+- url: https://pci-api.getpliant.com
+  description: PCI Vault Production Server
+- url: https://pci-sandbox.partner-api.getpliant.com
+  description: PCI Vault Sandbox Server
+security:
+- bearerAuth: []
+tags:
+- name: Transactions
+  description: This tag is for operations related to transactions
+paths:
+  /transactions:
+    get:
+      summary: List of Transactions
+      description: Returns a list of transactions. You can use the `limit`, `page`, `sortBy`, `sortDirection` parameters to filter and sort the results. You can also use filters like the `partnerSubmissionStatus` to e.g. only get transactions that you as a partner have not synced yet.
+      tags:
+      - Transactions
+      operationId: get-transactions
+      parameters:
+      - name: organizationId
+        in: query
+        description: The ID of the organization to get the transactions for.
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - name: status
+        in: query
+        description: The status of the transactions to filter by.
+        schema:
+          type: string
+          enum:
+          - DECLINED
+          - PENDING
+          - REVERSED
+          - CONFIRMED
+          - BOOKED
+      - name: type
+        in: query
+        description: The type of the transactions to filter by.
+        schema:
+          type: string
+          enum:
+          - PURCHASE
+          - CASH_WITHDRAWAL
+          - REFUND
+          - CHARGEBACK
+          - RECHARGE
+          - STATUS_INQUIRY
+      - name: partnerSubmissionStatus
+        in: query
+        description: The partner submission status of the transactions to filter by.
+        schema:
+          type: string
+          enum:
+          - NOT_SYNCED
+          - SYNCED
+          - TEMP_LOCKED
+          - LOCKED
+      - name: cardAccountId
+        in: query
+        description: The ID of the [card account](/docs/card-account) to get the transactions for. Transactions keep the card account id they were booked on. If a card account was superseded, filtering by the superseded id returns the transactions booked before the switch and filtering by its successor (`supersededBy`) returns the ones booked after. Query both ids to get a complete list across the switch.
+        schema:
+          type: string
+          format: uuid
+      - name: cardholderId
+        in: query
+        description: The ID of the [cardholder](/docs/cardholder-entity) to get the transactions for.
+        schema:
+          type: string
+          format: uuid
+      - name: cardId
+        in: query
+        description: The ID of the card to get the transactions for.
+        schema:
+          type: string
+          format: uuid
+      - name: fromDate
+        in: query
+        description: The `from` date to filter by as zero-offset UTC time. The date boundary is inclusive. Meaning we compare with `>=`.
+        schema:
+          type: string
+          format: date-time
+          example: '2024-07-19T15:00:00.000000Z'
+      - name: toDate
+        in: query
+        description: The `to` date to filter by as zero-offset UTC time. The date boundary is inclusive. Meaning we compare with `<=`.
+        schema:
+          type: string
+          format: date-time
+          example: '2024-07-19T15:00:00.000000Z'
+      - name: byDateField
+        in: query
+        description: The date field to filter by if `fromDate` and `toDate` are present.
+        schema:
+          type:
+          - string
+          - 'null'
+          enum:
+          - confirmedAt
+          - createdAt
+          - bookedAt
+          - updatedAt
+          default: confirmedAt
+      - name: limit
+        in: query
+        description: The maximum number of items to return per page. The default value if not provided is 100, the maximum allowed value is 1000.
+        schema:
+          type: integer
+      - name: page
+        in: query
+        description: The page number to return, starting with 0, this counts up to the total number of pages. The total number of pages is determined by the total number of records divided by the limit.
+        schema:
+          type: integer
+      - name: sortBy
+        in: query
+        description: The field to sort by.
+        schema:
+          type: string
+          enum:
+          - organizationId
+          - status
+          - type
+          - cardholderId
+          - cardId
+          - merchantId
+          - confirmedAt
+          - createdAt
+      - name: sortDirection
+        in: query
+        description: The direction to sort by.
+        schema:
+          type: string
+          enum:
+          - ASC
+          - DESC
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        transactionId:
+                          type: string
+                          format: uuid
+                          description: The ID of the transaction.
+                        organizationId:
+                          type: string
+                          format: uuid
+                          description: The ID of the organization this transaction belongs to.
+                        cardAccountId:
+                          type: string
+                          format: uuid
+                          description: The ID of the [card account](/docs/card-account) this transaction belongs to.
+                        cardholderId:
+                          type: string
+                          format: uuid
+                          description: The ID of the [cardholder](/docs/cardholder-entity) this transaction belongs to.
+                        cardId:
+                          type: string
+                          format: uuid
+                          description: The ID of the card this transaction belongs to.
+                        status:
+                          type: string
+                          description: The status of the transaction.
+                          enum:
+                          - DECLINED
+                          - PENDING
+                          - REVERSED
+                          - CONFIRMED
+                          - BOOKED
+                        type:
+                          type: string
+                          description: The type of the transaction.
+                          enum:
+                          - PURCHASE
+                          - CASH_WITHDRAWAL
+                          - REFUND
+                          - CHARGEBACK
+                          - RECHARGE
+                          - STATUS_INQUIRY
+                        partnerSubmissionStatus:
+                          type: string
+                          description: The partner submission status of the transaction. `TEMP_LOCKED` makes the transaction immutable for cardholders within Pliant apps. `TEMP_LOCKED` can be changed to `SYNCED`. `LOCKED` makes them immutable for all users and is the final state that cannot be modified anymore.
+                          enum:
+                          - NOT_SYNCED
+                          - SYNCED
+                          - TEMP_LOCKED
+                          - LOCKED
+                        billingAmount:
+                          type: object
+                          description: The amount that was billed to the cardholder, in the currency of the card account.
+                          properties:
+                            value:
+                              type: number
+                              description: The value of the monetary amount, converted to minor units of the currency. For instance 1.00 EUR is 100 cents, thus the value here is `100`. See our [guides](/docs/monetary-values) for more details about how to handle monetary amounts.
+                            currency:
+                              type: string
+                              description: The currency of the monetary amount in ISO 4217 format, for example `EUR` for Euro or `USD` for US Dollar.
+                        transactionAmount:
+                          type: object
+                          description: The amount that was transacted.
+                          properties:
+                            value:
+                              type: number
+                              description: The value of the monetary amount, converted to minor units of the currency. For instance 1.00 EUR is 100 cents, thus the value here is `100`. See our [guides](/docs/monetary-values) for more details about how to handle monetary amounts.
+                            currency:
+                              type: string
+                              description: The currency of the monetary amount in ISO 4217 format, for example `EUR` for Euro or `USD` for US Dollar.
+                        confirmedAt:
+                          type:
+                          - string
+                          - 'null'
+                          format: date-time
+                          description: The date-time when the transaction was confirmed.
+                        createdAt:
+                          type:
+                          - string
+                          - 'null'
+                          format: date-time
+                          description: The date-time when the transaction was created.
+                        updatedAt:
+                          type:
+                          - string
+                          - 'null'
+                          format: date-time
+                          description: The date-time when the transaction was updated.
+                  hasNextPage:
+                    type: boolean
+                    description: Indicates whether there is a next page available.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /transactions/details:
+    post:
+      summary: Transaction Details
+      description: 'Returns all transaction details for the given IDs. You can also request transaction details per card(s), cardholder(s) or organization(s).
+
+        The API returns all transaction details to the given input which can be found in the system. So you can also combine the different input fields (OR relation).
+
+        Be aware that the usage of card, cardholder or organizations IDs most likely add multiple transaction details themselves.
+
+        Also cardholders can be part of multiple organizations, thus when searching via cardholder IDs, it might return more data than it would for just one organization this cardholder is part of.
+
+        At least one parameter has to be set.
+
+
+        **This endpoint has changed in comparison to the previous version of the API.** The following changes were made:
+
+        - we removed the following data from the response body: `merchantId` (field), `merchantName` (field)
+
+        - we added the following data to the response body: `merchantData` (object), `merchantRawData` (object), `authCode` (field)'
+      tags:
+      - Transactions
+      operationId: get-transactions-detail-batch
+      requestBody:
+        required: true
+        description: All fields are optional. At least one parameter has to be set.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                transactionIds:
+                  type: array
+                  description: The unique identifiers of the transactions.
+                  items:
+                    type: string
+                    format: uuid
+                cardIds:
+                  type: array
+                  description: The unique identifiers of the credit cards used for making the transaction(s).
+                  items:
+                    type: string
+                    format: uuid
+                cardholderIds:
+                  type: array
+                  description: The unique identifiers of the cardholders.
+                  items:
+                    type: string
+                    format: uuid
+                organizationIds:
+                  type: array
+                  description: The unique identifiers of the organizations.
+                  items:
+                    type: string
+                    format: uuid
+                cardAccountIds:
+                  type: array
+                  description: The unique identifiers of the card accounts.
+                  items:
+                    type: string
+                    format: uuid
+                pagination:
+                  type: object
+                  properties:
+                    page:
+                      type: integer
+                      description: The page number to return, starting with 0, this counts up to the total number of pages. The total number of pages is determined by the total number of records divided by the limit.
+                    limit:
+                      type: integer
+                      description: The number of records to return per page.
+                    sortBy:
+                      type: object
+                      description: The field to sort by and the direction to sort by.
+                      properties:
+                        field:
+                          type: string
+                          description: The field to sort by.
+                          enum:
+                          - organizationId
+                          - status
+                          - type
+                          - cardholderId
+                          - cardId
+                          - merchantId
+                          - confirmedAt
+                          - createdAt
+                          default: createdAt
+                        direction:
+                          description: The direction to sort by.
+                          type: string
+                          enum:
+                          - ASC
+                          - DESC
+                          default: ASC
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        transactionId:
+                          type: string
+                          format: uuid
+                          description: The unique ID of the transaction.
+                        organizationId:
+                          type: string
+                          format: uuid
+                          description: The unique ID of the organization to which this transaction belongs to.
+                        cardAccountId:
+                          type: string
+                          format: uuid
+                          description: The unique ID of the [card account](/docs/card-account) to which this transaction belongs to.
+                        cardholderId:
+                          type: string
+                          format: uuid
+                          description: The unique ID of the [cardholder](/docs/cardholder-entity) to which this transaction belongs to.
+                        cardId:
+                          type: string
+                          format: uuid
+                          description: The unique ID of the card to which this transaction belongs to.
+                        status:
+                          type: string
+                          description: The status of the transaction.
+                          enum:
+                          - DECLINED
+                          - PENDING
+                          - REVERSED
+                          - CONFIRMED
+                          - BOOKED
+                        type:
+                          type: string
+                          description: The type of the transaction.
+                          enum:
+                          - PURCHASE
+                          - CASH_WITHDRAWAL
+                          - REFUND
+                          - CHARGEBACK
+                          - RECHARGE
+                          - STATUS_INQUIRY
+                        acceptanceMethod:
+                          type:
+                          - string
+                          - 'null'
+                          description: The method used to accept the transaction. Null indicates historical data without an acceptance method; NOT_AVAILABLE is an explicit value reported by the upstream provider.
+                          enum:
+                          - ONLINE
+                          - MOBILE_WALLET
+                          - MANUAL_ENTRY
+                          - CONTACTLESS
+                          - CHIP_DIP
+                          - NOT_AVAILABLE
+                          - MAGNETIC_STRIPE
+                          - OTHER
+                        partnerSubmissionStatus:
+                          type: string
+                          enum:
+                          - NOT_SYNCED
+                          - SYNCED
+                          - TEMP_LOCKED
+                          - LOCKED
+                          description: This status can be driven by the partner to mark transactions on Pliant-side as consumed by the partner. `TEMP_LOCKED` makes transaction immutable for cardholders within Pliant apps. `LOCKED` makes them immutable for all users. `TEMP_LOCKED` can be changed to `SYNCED`. `LOCKED` is the final state that cannot be modified anymore
+                        partnerSubmissionStatusSyncedAt:
+                          type:
+                          - string
+                          - 'null'
+                          format: date-time
+                          description: The date-time the `partnerSubmissionStatus` was changed to `SYNCED`.
+                        partnerSubmissionStatusTempLockedAt:
+                          type:
+                          - string
+                          - 'null'
+                          format: date-time
+                          description: The date-time the `partnerSubmissionStatus` was changed to `TEMP_LOCKED`.
+                        partnerSubmissionStatusLockedAt:
+                          type:
+                          - string
+                          - 'null'
+                          format: date-time
+                          description: The date-time the `partnerSubmissionStatus` was changed to `LOCKED`.
+                        category:
+                          type: string
+                          description: The category of the transaction. This groups together similar merchants into Pliant-defined categories.
+                          enum:
+                          - ADVERTISING_AND_MARKETING
+                          - COMPUTING_AND_SOFTWARE
+                          - EDUCATION_AND_TRAINING
+                          - ELECTRONICS_AND_IT_EQUIPMENT
+                          - ENTERTAINMENT_AND_WELLNESS
+                          - FOOD_AND_DRINKS
+                          - GIFTS_AND_VOUCHERS
+                          - MATERIALS_AND_PACKAGING
+                          - OFFICE_SUPPLIES_AND_EQUIPMENT
+                          - SERVICES
+                          - TRAVEL_AND_ACCOMMODATION
+                          - HEALTHCARE
+                          - OTHER
+                        billingAmount:
+                          type: object
+                          description: The amount that was billed to the cardholder, in the currency of the card account.
+                          properties:
+                            value:
+                              type: number
+                              description: The value of the monetary amount, converted to minor units of the currency. For instance 1.00 EUR is 100 cents, thus the value here is `100`. See our [guides](/docs/monetary-values) for more details about how to handle monetary amounts.
+                            currency:
+                              type: string
+                              description: The currency of the monetary amount in ISO 4217 format, for example `EUR` for Euro or `USD` for US Dollar.
+                        transactionAmount:
+                          type: object
+                          description: The amount that was paid to the merchant via this transaction, in the local currency of the merchant.
+                          properties:
+                            value:
+                              type: number
+                              description: The value of the monetary amount, converted to minor units of the currency. For instance 1.00 EUR is 100 cents, thus the value here is `100`. See our [guides](/docs/monetary-values) for more details about how to handle monetary amounts.
+                            currency:
+                              type: string
+                              description: The currency of the monetary amount in ISO 4217 format, for example `EUR` for Euro or `USD` for US Dollar.
+                        transactionCountry:
+                          type: string
+                          description: ISO 3166-1 alpha-3 code of the country the transaction was made it, e.g. `DEU` for Germany or `NLD` for Netherlands. You can find a list of valid country code on [Wikipedia](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3).
+                          minLength: 3
+                          maxLength: 3
+                        transactionLocalTime:
+                          type:
+                          - string
+                          - 'null'
+                          format: date-time
+                          description: The date-time the transaction was made in the local time of the merchant.
+                        createdAt:
+                          type: string
+                          format: date-time
+                          description: The date-time the transaction was first recognized by Pliant, e.g. `2023-09-15T11:55:34.527552Z`.
+                        authorizedAt:
+                          type:
+                          - string
+                          - 'null'
+                          format: date-time
+                          description: The date-time this transaction was authorized by the card network, e.g. `2023-09-15T11:55:34.527552Z`. Can be `null` for `DECLINED` or `REVERSED` transactions or for `STATUS_INQUIRY`, `REFUND`, `CHARGEBACK` or `RECHARGE` transactions.
+                        confirmedAt:
+                          type:
+                          - string
+                          - 'null'
+                          format: date-time
+                          description: The date-time this transaction was confirmed by the card network, e.g. `2023-09-19T07:24:52.707296Z`. Value is `null`, until the transaction is confirmed.
+                        bookedAt:
+                          type:
+                          - string
+                          - 'null'
+                          format: date
+                          description: The date this transaction was booked by Pliant against the internal bank account of the organization, e.g. `2023-09-19`. Value is `null`, until the transaction is booked.
+                        reversedAt:
+                          type:
+                          - string
+                          - 'null'
+                          format: date-time
+                          description: The date-time this transaction was reversed by the card network, e.g. `2023-09-15T11:55:34.527552Z`. Value is only filled, if the transaction is reversed.
+                        declineReason:
+                          type:
+                          - object
+                          - 'null'
+                          description: "Filled, if the transaction was declined. The decline reason `type`, together with `title` and `description` in all supported languages. E.g.:\n```\n{\n  \"type\": \"LOCKED_CARD\",\n  \"title\": {\n    \"en\": \"Card locked\"\n  },\n  \"description\": {\n    \"en\": \"The card is locked. You can unlock the card in the Wallet section of the cardholder app.\"\n  }\n}\n```\nIf the transaction status is anything else but `DECLINED` the object `declineReason` returns `null`\n"
+                          properties:
+                            type:
+                              $ref: '#/paths/~1transactions~1{transactionId}/get/responses/200/content/application~1json/schema/properties/declineReason/properties/type'
+                            title:
+                              type: object
+                              additionalProperties:
+                                type: string
+                              example:
+                                en: Card locked
+                                de: Karte ist gesperrt
+                            description:
+                              type: object
+                              additionalProperties:
+                                type: string
+                              example:
+                                en: The card is locked. You can unlock the card in the Wallet section of the cardholder app.
+                        linkedTransactionId:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                          description: Optional reference to any original transaction, used for recharges, chargebacks and chargeback reversals.
+                        receiptCount:
+                          type: integer
+                          description: Number of uploaded receipts to this transaction.
+                          minLength: 0
+                        receiptIds:
+                          type: array
+                          items:
+                            type: string
+                            format: uuid
+                          description: The receipts attached to this transaction, if any. Otherwise, the array is empty.
+                        receiptUploadEnabled:
+                          type: boolean
+                          description: This field describes if the transaction is waiting for a receipt, or if no receipt is expected for this transaction. If set to `true` its possible to upload receipts to the transaction, if set to `false` it is not possible to upload receipts to the transaction.
+                        comment:
+                          type:
+                          - string
+                          - 'null'
+                          description: A cardholder-defined comment for this transaction.
+                        merchantData:
+                          type: object
+                          description: Pliant's merchant data. If the merchant is not known to Pliant, the object is `null`.
+                          properties:
+                            pliantMerchantId:
+                              type: string
+                              format: uuid
+                              description: Pliant's merchant ID (can be specific for each organization).
+                            displayName:
+                              type: string
+                              description: Display merchant name that can be used to show additionally next to the raw merchant description.
+                            logoPath:
+                              type:
+                              - string
+                              - 'null'
+                              description: The URL to the logo of the merchant, if there is any. It might be `null` for merchants we currently do not have in our database. The URL looks similar to this example `merchant-logos.getpliant.com/17e21b54-80d0-4843-9125-e522bb262ebb.png?v=3`. If you want to display the logo in your application, please make a copy of the logo and do not directly hotlink the logo. The static image should be served from your own infrastructure.
+                        merchantRawData:
+                          type: object
+                          description: Raw merchant data as received from the card network, thus the quality of those fields differ greatly between merchants. We do not control the information provided here.
+                          properties:
+                            mcc:
+                              type:
+                              - string
+                              - 'null'
+                              description: The merchant category code (MCC) is a four-digit number assigned to a business by an acquiring bank or institution. The MCC is used to classify the business by the type of goods or services it provides.
+                            mccDesc:
+                              type:
+                              - string
+                              - 'null'
+                              description: The merchant category code (MCC) description is a short description of the MCC.
+                            merchantStreet:
+                              type:
+                              - string
+                              - 'null'
+                              description: The street of the merchant.
+                            merchantCity:
+                              type:
+                              - string
+                              - 'null'
+                              description: The city of the merchant.
+                            merchantRegion:
+                              type:
+                              - string
+                              - 'null'
+                              description: The region of the merchant.
+                            merchantPostcode:
+                              type:
+                              - string
+                              - 'null'
+                              description: The postcode of the merchant.
+                            merchantCountry:
+                              type:
+                              - string
+                              - 'null'
+                              description: The country of the merchant, in ISO 3166-1 alpha-3 format.
+                              minLength: 3
+                              maxLength: 3
+                            merchantPhone:
+                              type:
+                              - string
+                              - 'null'
+                              description: The phone number of the merchant.
+                            merchantUrl:
+                              type:
+                              - string
+                              - 'null'
+                              description: The URL of the merchant.
+                            merchantNameOther:
+                              type:
+                              - string
+                              - 'null'
+                              description: The name of the merchant in the local language.
+                            merchantLegalName:
+                              type:
+                              - string
+                              - 'null'
+                              description: The legal name of the merchant.
+                            merchantTaxId:
+                              type:
+                              - string
+                              - 'null'
+                              description: The tax ID of the merchant.
+                            merchantContact:
+                              type:
+                              - string
+                              - 'null'
+                              description: The contact information of the merchant.
+                            merchantTerminalId:
+                              type:
+                              - string
+                              - 'null'
+                              description: The terminal ID of the merchant used to make this transaction.
+                            descriptionAuthorization:
+                              type:
+                              - string
+                              - 'null'
+                              description: Authorization message by the merchant.
+                            descriptionConfirmation:
+                              type:
+                              - string
+                              - 'null'
+                              description: Confirmation message by the merchant.
+                        authCode:
+                          type:
+                          - string
+                          - 'null'
+                          description: Authorization code used for this transaction.
+                        paymentDate:
+                          type:
+                          - string
+                          - 'null'
+                          format: date
+                          description: The date on which the outstanding amount of this transaction was paid back to Pliant. It basically is the date the bank settlement was received by Pliant. This field is only filled after the next payment frequency cycle of this organization. The format of the date is `YYYY-MM-DD`.
+                        paymentReference:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                          description: The reference to the payment with which this transaction was paid to Pliant. Check the [payment API](getpaymentsdetail) to get details about the payment. This field is only filled after the next payment frequency cycle of this organization and also only if the organization is not solely using prefund accounts (where there are no regular payments).
+                        wallet:
+                          type: string
+                          description: If the transaction was made using a mobile wallet (`APPLE` or `ANDROID`), the respective wallet type is returned. Otherwise, the field is `OTHER`.
+                          enum:
+                          - APPLE
+                          - ANDROID
+                          - OTHER
+                        fxFee:
+                          type: object
+                          description: The foreign exchange fee that was charged for this transaction, if any.
+                          properties:
+                            fxFeePercentage:
+                              type:
+                              - number
+                              - 'null'
+                              description: 'The per-organization fee (as a percentage of the transaction amount) that is charged for foreign exchange transactions. This value is specific to this organization. Example: `2.1`.'
+                              format: float
+                              example: 2.1
+                              minimum: 0
+                              maximum: 100
+                            fxFeeAmount:
+                              type:
+                              - object
+                              - 'null'
+                              description: 'The specific amount of the foreign exchange fee that was charged for this transaction. Example: `0.21 EUR`.'
+                              properties:
+                                value:
+                                  type: number
+                                  description: The value of the monetary amount, converted to minor units of the currency. For instance 1.00 EUR is 100 cents, thus the value here is `100`. See our [guides](/docs/monetary-values) for more details about how to handle monetary amounts.
+                                  example: 21
+                                currency:
+                                  type: string
+                                  description: The currency of the monetary amount in ISO 4217 format, for example `EUR` for Euro or `USD` for US Dollar.
+                                  example: EUR
+                        personal:
+                          type: boolean
+                          description: Indicates transaction was done for personal purpose.
+                        acquirerReferenceNumber:
+                          type: string
+                          description: The acquirer reference number as provided by the card network for the transaction.
+                  hasNextPage:
+                    type: boolean
+                    description: Indicates whether there is a next page available.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /transactions/partner-submission-status:
+    post:
+      summary: Update Partner Submission Status (Multiple)
+      description: Updates the partnerSubmissionStatus of one or more transactions. See documentation for more information.
+      tags:
+      - Transactions
+      operationId: update-transaction-partner-submission-status-batch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                partnerSubmissionStatus:
+                  type: string
+                  enum:
+                  - NOT_SYNCED
+                  - SYNCED
+                  - TEMP_LOCKED
+                  - LOCKED
+                  description: The status `NOT_SYNCED` is the default status of a transaction, it can be changed to `SYNCED` by the partner, e.g. if the partner consumed a transaction successfully. The status `TEMP_LOCKED` makes the transaction immutable for cardholders within Pliant's apps - it is a reversible status and can be changed back to `SYNCED`. `LOCKED` makes a transaction immutable for all users. `LOCKED` is the final status which cannot be modified anymore.
+                transactionIds:
+                  type: array
+                  description: The unique identifiers of the transactions.
+                  items:
+                    type: string
+                    format: uuid
+              required:
+              - partnerSubmissionStatus
+              - transactionIds
+      responses:
+        '202':
+          description: Ok
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /transactions/subscription:
+    post:
+      summary: 'Callback: Add/Update'
+      description: Subscribe to callbacks for this entity or change an existing callback.
+      tags:
+      - Transactions
+      operationId: create-transaction-subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                callbackUrl:
+                  type: string
+                  format: uri
+                  example: https://myserver.com/send/callback/here
+                  description: The URL to send the callback to. Must be a valid and reachable URL. We do some basic validation to ensure the URL is syntactically correct and reachable for Pliant. Only HTTPS URLs are supported.
+                eventTypes:
+                  type: array
+                  description: The event types to subscribe to.
+                  items:
+                    type: string
+                    enum:
+                    - TRANSACTION_CREATED
+                    - TRANSACTION_UPDATED
+                    - TRANSACTION_TYPE_UPDATED
+                    - TRANSACTION_STATUS_CHANGED
+                    - TRANSACTION_AMOUNT_CHANGED
+                    - TRANSACTION_MERCHANT_UPDATED
+                    - TRANSACTION_AUTH_CODE
+                    - TRANSACTION_AUTHORIZED
+                    - TRANSACTION_CONFIRMED
+                    - TRANSACTION_COMMENT_UPDATED
+                    - TRANSACTION_RECEIPT_UPLOAD_ENABLED_UPDATED
+              required:
+              - callbackUrl
+              - eventTypes
+      responses:
+        '201':
+          description: Created
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+      callbacks:
+        transactionUpdated:
+          '{$request.body#/callbackUrl}':
+            description: Callback structure for transaction creation and changed events (TRANSACTION_CREATED, TRANSACTION_UPDATED, TRANSACTION_TYPE_UPDATED, TRANSACTION_AMOUNT_CHANGED). If you need more detailed data about the transaction, please refer to our [transaction details endpoint](./get-transactions-detail-batch).
+            post:
+              parameters:
+              - in: header
+                name: X-Organization-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the organization this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Partner-Organization-Id
+                schema:
+                  type: string
+                  description: 'Filled, if the value `partnerOrganizationId` is [set](/reference/update-organization) by the partner on the organization itself. Referencing the organization identifier of the partner. Example value: `abc123`.'
+              - in: header
+                name: X-Payment-Program-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the payment program this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Callback-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'A unique identifier for this callback. Can be used to deduplicate callbacks to achieve idempotent behavior. See [guides](/docs/callbacks) for more details. Example value: `12a03093-eaad-4ae5-9d8d-42e7f6f8b7c6`.'
+              - in: header
+                name: X-Callback-Created-At
+                schema:
+                  type: string
+                  format: date-time
+                  description: 'The date and time when the callback was created. Can be used to reorder callbacks. See [guides](/docs/callbacks) for more details. Example value: `2024-03-15T15:55:58.623375258Z`.'
+              requestBody:
+                content:
+                  application/json:
+                    schema:
+                      allOf:
+                      - $ref: '#/paths/~1cards~1subscription/post/callbacks/cardUpdated/{$request.body#~1callbackUrl}/post/requestBody/content/application~1json/schema/allOf/0'
+                      - type: object
+                        properties:
+                          transactionId:
+                            type: string
+                            format: uuid
+                            description: The unique identifier of the transaction.
+                          organizationId:
+                            type: string
+                            format: uuid
+                            description: The unique identifier of the organization.
+                          cardholderId:
+                            type: string
+                            format: uuid
+                            description: The unique identifier of the cardholder.
+                          cardId:
+                            type: string
+                            format: uuid
+                            description: The unique identifier of the credit card used for making the transaction.
+                          cardAccountId:
+                            type: string
+                            format: uuid
+                            description: The unique identifier of the [card account](/docs/card-account) this transaction belongs to.
+                          status:
+                            type: string
+                            description: The status of the transaction.
+                            enum:
+                            - DECLINED
+                            - PENDING
+                            - REVERSED
+                            - CONFIRMED
+                            - BOOKED
+                          type:
+                            type: string
+                            description: The type of the transaction.
+                            enum:
+                            - PURCHASE
+                            - CASH_WITHDRAWAL
+                            - REFUND
+                            - CHARGEBACK
+                            - RECHARGE
+                            - STATUS_INQUIRY
+                          merchantRawData:
+                            type: object
+                            description: Raw merchant data as received from the card network, thus the quality of those fields differ greatly between merchants. We do not control the information provided here. More details via the [transaction details endpoint](./get-transactions-detail-batch).
+                            properties:
+                              mcc:
+                                type:
+                                - string
+                                - 'null'
+                                description: The merchant category code (MCC) is a four-digit number assigned to a business by an acquiring bank or institution. The MCC is used to classify the business by the type of goods or services it provides.
+                              merchantCountry:
+                                type:
+                                - string
+                                - 'null'
+                                description: The country of the merchant, in ISO 3166-1 alpha-3 format.
+                                minLength: 3
+                                maxLength: 3
+                              merchantName:
+                                type:
+                                - string
+                                - 'null'
+                                description: The name of the merchant as provided by the card network.
+                          billingAmount:
+                            type: object
+                            description: The amount that was billed to the cardholder, in the currency of the card account.
+                            properties:
+                              value:
+                                type: number
+                                description: The value of the amount, converted to minor units of the currency. E.g. 1 EUR is 100 cents, thus the value is 100.
+                              currency:
+                                type: string
+                                description: The currency of the amount, in ISO 4217 format. E.g. `EUR` for Euro.
+                          transactionAmount:
+                            type: object
+                            description: The amount that was paid to the merchant via this transaction, in the local currency of the merchant.
+                            properties:
+                              value:
+                                type: number
+                                description: The value of the amount, converted to minor units of the currency. E.g. 1 EUR is 100 cents, thus the value is 100.
+                              currency:
+                                type: string
+                                description: The currency of the amount, in ISO 4217 format. E.g. `EUR` for Euro.
+                          authCode:
+                            type:
+                            - string
+                            - 'null'
+                            description: Authorization code used for this transaction.
+                          declineReasonType:
+                            $ref: '#/paths/~1transactions~1{transactionId}/get/responses/200/content/application~1json/schema/properties/declineReason/properties/type'
+                          createdAt:
+                            type:
+                            - string
+                            - 'null'
+                            format: date-time
+                            description: The date and time when the transaction was created in Pliant's system.
+                          personal:
+                            type:
+                            - boolean
+                            - 'null'
+                            description: Indicates the transaction was done for personal purpose.
+              responses:
+                '200':
+                  description: We expect the partner to return a HTTP 200 status code if the callback was successfully received. On 4xx and 5xx status codes, we will [retry](/docs/callbacks#retries) the callback.
+        transactionStatusChanged:
+          '{$request.body#/callbackUrl}':
+            description: Callback structure for transaction status change (TRANSACTION_STATUS_CHANGED) events. This event is fired when the status of a transaction changes. Unlike other transaction events, this callback includes the `bookedAt` field, which is set when the transaction is booked by Pliant against the internal bank account of the organization. If you need more detailed data about the transaction, please refer to our [transaction details endpoint](./get-transactions-detail-batch).
+            post:
+              parameters:
+              - in: header
+                name: X-Organization-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the organization this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Partner-Organization-Id
+                schema:
+                  type: string
+                  description: 'Filled, if the value `partnerOrganizationId` is [set](/reference/update-organization) by the partner on the organization itself. Referencing the organization identifier of the partner. Example value: `abc123`.'
+              - in: header
+                name: X-Payment-Program-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the payment program this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Callback-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'A unique identifier for this callback. Can be used to deduplicate callbacks to achieve idempotent behavior. See [guides](/docs/callbacks) for more details. Example value: `12a03093-eaad-4ae5-9d8d-42e7f6f8b7c6`.'
+              - in: header
+                name: X-Callback-Created-At
+                schema:
+                  type: string
+                  format: date-time
+                  description: 'The date and time when the callback was created. Can be used to reorder callbacks. See [guides](/docs/callbacks) for more details. Example value: `2024-03-15T15:55:58.623375258Z`.'
+              requestBody:
+                content:
+                  application/json:
+                    schema:
+                      allOf:
+                      - $ref: '#/paths/~1cards~1subscription/post/callbacks/cardUpdated/{$request.body#~1callbackUrl}/post/requestBody/content/application~1json/schema/allOf/0'
+                      - type: object
+                        properties:
+                          transactionId:
+                            type: string
+                            format: uuid
+                            description: The unique identifier of the transaction.
+                          organizationId:
+                            type: string
+                            format: uuid
+                            description: The unique identifier of the organization.
+                          cardholderId:
+                            type: string
+                            format: uuid
+                            description: The unique identifier of the cardholder.
+                          cardId:
+                            type: string
+                            format: uuid
+                            description: The unique identifier of the credit card used for making the transaction.
+                          cardAccountId:
+                            type: string
+                            format: uuid
+                            description: The unique identifier of the [card account](/docs/card-account) this transaction belongs to.
+                          status:
+                            type: string
+                            description: The status of the transaction.
+                            enum:
+                            - DECLINED
+                            - PENDING
+                            - REVERSED
+                            - CONFIRMED
+                            - BOOKED
+                          type:
+                            type: string
+                            description: The type of the transaction.
+                            enum:
+                            - PURCHASE
+                            - CASH_WITHDRAWAL
+                            - REFUND
+                            - CHARGEBACK
+                            - RECHARGE
+                            - STATUS_INQUIRY
+                          acceptanceMethod:
+                            $ref: '#/paths/~1transactions~1details/post/responses/200/content/application~1json/schema/properties/data/items/properties/acceptanceMethod'
+                          merchantRawData:
+                            type: object
+                            description: Raw merchant data as received from the card network, thus the quality of those fields differ greatly between merchants. We do not control the information provided here. More details via the [transaction details endpoint](./get-transactions-detail-batch).
+                            properties:
+                              mcc:
+                                type:
+                                - string
+                                - 'null'
+                                description: The merchant category code (MCC) is a four-digit number assigned to a business by an acquiring bank or institution. The MCC is used to classify the business by the type of goods or services it provides.
+                              merchantCountry:
+                                type:
+                                - string
+                                - 'null'
+                                description: The country of the merchant, in ISO 3166-1 alpha-3 format.
+                                minLength: 3
+                                maxLength: 3
+                              merchantName:
+                                type:
+                                - string
+                                - 'null'
+                                description: The name of the merchant as provided by the card network.
+                          billingAmount:
+                            type: object
+                            description: The amount that was billed to the cardholder, in the currency of the card account.
+                            properties:
+                              value:
+                                type: number
+                                description: The value of the amount, converted to minor units of the currency. E.g. 1 EUR is 100 cents, thus the value is 100.
+                              currency:
+                                type: string
+                                description: The currency of the amount, in ISO 4217 format. E.g. `EUR` for Euro.
+                          transactionAmount:
+                            type: object
+                            description: The amount that was paid to the merchant via this transaction, in the local currency of the merchant.
+                            properties:
+                              value:
+                                type: number
+                                description: The value of the amount, converted to minor units of the currency. E.g. 1 EUR is 100 cents, thus the value is 100.
+                              currency:
+                                type: string
+                                description: The currency of the amount, in ISO 4217 format. E.g. `EUR` for Euro.
+                          authCode:
+                            type:
+                            - string
+                            - 'null'
+                            description: Authorization code used for this transaction.
+                          declineReasonType:
+                            $ref: '#/paths/~1transactions~1{transactionId}/get/responses/200/content/application~1json/schema/properties/declineReason/properties/type'
+                          createdAt:
+                            type:
+                            - string
+                            - 'null'
+                            format: date-time
+                            description: The date and time when the transaction was created in Pliant's system.
+                          bookedAt:
+                            type:
+                            - string
+                            - 'null'
+                            format: date
+                            description: The date this transaction was booked by Pliant against the internal bank account of the organization, e.g. `2023-09-19`. Value is null, until the transaction is booked.
+                          personal:
+                            type:
+                            - boolean
+                            - 'null'
+                            description: Indicates the transaction was done for personal purpose.
+              responses:
+                '200':
+                  description: We expect the partner to return a HTTP 200 status code if the callback was successfully received. On 4xx and 5xx status codes, we will [retry](/docs/callbacks#retries) the callback.
+        transactionMerchantUpdated:
+          '{$request.body#/callbackUrl}':
+            description: Callback structure for transaction merchant update (TRANSACTION_MERCHANT_UPDATED) events. This event is fired when the merchant of a transaction is updated due to Pliant's internal merchant features. It can also happen if the card network sends more information about the merchant after the transaction was created.
+            post:
+              parameters:
+              - in: header
+                name: X-Organization-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the organization this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Partner-Organization-Id
+                schema:
+                  type: string
+                  description: 'Filled, if the value `partnerOrganizationId` is [set](/reference/update-organization) by the partner on the organization itself. Referencing the organization identifier of the partner. Example value: `abc123`.'
+              - in: header
+                name: X-Payment-Program-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the payment program this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Callback-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'A unique identifier for this callback. Can be used to deduplicate callbacks to achieve idempotent behavior. See [guides](/docs/callbacks) for more details. Example value: `12a03093-eaad-4ae5-9d8d-42e7f6f8b7c6`.'
+              - in: header
+                name: X-Callback-Created-At
+                schema:
+                  type: string
+                  format: date-time
+                  description: 'The date and time when the callback was created. Can be used to reorder callbacks. See [guides](/docs/callbacks) for more details. Example value: `2024-03-15T15:55:58.623375258Z`.'
+              requestBody:
+                content:
+                  application/json:
+                    schema:
+                      allOf:
+                      - $ref: '#/paths/~1cards~1subscription/post/callbacks/cardUpdated/{$request.body#~1callbackUrl}/post/requestBody/content/application~1json/schema/allOf/0'
+                      - type: object
+                        properties:
+                          transactionId:
+                            type: string
+                            format: uuid
+                            description: The unique identifier of the transaction.
+                          organizationId:
+                            type: string
+                            format: uuid
+                            description: The unique identifier of the organization.
+                          cardAccountId:
+                            type: string
+                            format: uuid
+                            description: The card account to which this transaction belongs to.
+                          merchantId:
+                            type: string
+                            format: uuid
+                            description: The unique identifier of the merchant.
+              responses:
+                '200':
+                  description: We expect the partner to return a HTTP 200 status code if the callback was successfully received. On 4xx and 5xx status codes, we will [retry](/docs/callbacks#retries) the callback.
+        transactionAuthCode:
+          '{$request.body#/callbackUrl}':
+            description: Callback structure for transaction auth code (TRANSACTION_AUTH_CODE) events. This event is fired when the authorization code generated by Thredd (Pliant's credit card processor) for approved requests is set or changed.
+            post:
+              parameters:
+              - in: header
+                name: X-Organization-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the organization this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Partner-Organization-Id
+                schema:
+                  type: string
+                  description: 'Filled, if the value `partnerOrganizationId` is [set](/reference/update-organization) by the partner on the organization itself. Referencing the organization identifier of the partner. Example value: `abc123`.'
+              - in: header
+                name: X-Payment-Program-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the payment program this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Callback-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'A unique identifier for this callback. Can be used to deduplicate callbacks to achieve idempotent behavior. See [guides](/docs/callbacks) for more details. Example value: `12a03093-eaad-4ae5-9d8d-42e7f6f8b7c6`.'
+              - in: header
+                name: X-Callback-Created-At
+                schema:
+                  type: string
+                  format: date-time
+                  description: 'The date and time when the callback was created. Can be used to reorder callbacks. See [guides](/docs/callbacks) for more details. Example value: `2024-03-15T15:55:58.623375258Z`.'
+              requestBody:
+                content:
+                  application/json:
+                    schema:
+                      allOf:
+                      - $ref: '#/paths/~1cards~1subscription/post/callbacks/cardUpdated/{$request.body#~1callbackUrl}/post/requestBody/content/application~1json/schema/allOf/0'
+                      - type: object
+                        properties:
+                          transactionId:
+                            type: string
+                            format: uuid
+                            description: The unique identifier of the transaction.
+                          organizationId:
+                            type: string
+                            format: uuid
+                            description: The unique identifier of the organization.
+                          authCode:
+                            type: string
+                            description: The authorization code of the transaction.
+                          createdAt:
+                            type:
+                            - string
+                            - 'null'
+                            format: date-time
+                            description: The date and time when the transaction was created.
+              responses:
+                '200':
+                  description: We expect the partner to return a HTTP 200 status code if the callback was successfully received. On 4xx and 5xx status codes, we will [retry](/docs/callbacks#retries) the callback.
+        transactionAuthorized:
+          '{$request.body#/callbackUrl}':
+            description: Callback structure for transaction authorization (TRANSACTION_AUTHORIZED) event. This events are fired when the a transaction is authorized or confirmed.
+            post:
+              parameters:
+              - in: header
+                name: X-Organization-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the organization this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Partner-Organization-Id
+                schema:
+                  type: string
+                  description: 'Filled, if the value `partnerOrganizationId` is [set](/reference/update-organization) by the partner on the organization itself. Referencing the organization identifier of the partner. Example value: `abc123`.'
+              - in: header
+                name: X-Payment-Program-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the payment program this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Callback-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'A unique identifier for this callback. Can be used to deduplicate callbacks to achieve idempotent behavior. See [guides](/docs/callbacks) for more details. Example value: `12a03093-eaad-4ae5-9d8d-42e7f6f8b7c6`.'
+              - in: header
+                name: X-Callback-Created-At
+                schema:
+                  type: string
+                  format: date-time
+                  description: 'The date and time when the callback was created. Can be used to reorder callbacks. See [guides](/docs/callbacks) for more details. Example value: `2024-03-15T15:55:58.623375258Z`.'
+              requestBody:
+                $ref: '#/paths/~1transactions~1subscription/post/callbacks/transactionConfirmed/{$request.body#~1callbackUrl}/post/requestBody'
+              responses:
+                '200':
+                  description: We expect the partner to return a HTTP 200 status code if the callback was successfully received. On 4xx and 5xx status codes, we will [retry](/docs/callbacks#retries) the callback.
+        transactionConfirmed:
+          '{$request.body#/callbackUrl}':
+            description: Callback structure for the transaction confirmation (TRANSACTION_CONFIRMED) event. This event fires when the card network confirms a previously authorized transaction. Unlike TRANSACTION_AUTHORIZED, this payload includes the network confirmation timestamp and the merchant's confirmation message.
+            post:
+              parameters:
+              - in: header
+                name: X-Organization-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the organization this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Partner-Organization-Id
+                schema:
+                  type: string
+                  description: 'Filled, if the value `partnerOrganizationId` is [set](/reference/update-organization) by the partner on the organization itself. Referencing the organization identifier of the partner. Example value: `abc123`.'
+              - in: header
+                name: X-Payment-Program-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the payment program this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Callback-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'A unique identifier for this callback. Can be used to deduplicate callbacks to achieve idempotent behavior. See [guides](/docs/callbacks) for more details. Example value: `12a03093-eaad-4ae5-9d8d-42e7f6f8b7c6`.'
+              - in: header
+                name: X-Callback-Created-At
+                schema:
+                  type: string
+                  format: date-time
+                  description: 'The date and time when the callback was created. Can be used to reorder callbacks. See [guides](/docs/callbacks) for more details. Example value: `2024-03-15T15:55:58.623375258Z`.'
+              requestBody:
+                content:
+                  application/json:
+                    schema:
+                      allOf:
+                      - $ref: '#/paths/~1cards~1subscription/post/callbacks/cardUpdated/{$request.body#~1callbackUrl}/post/requestBody/content/application~1json/schema/allOf/0'
+                      - type: object
+                        properties:
+                          transactionId:
+                            type: string
+                            format: uuid
+                            description: The unique ID of the transaction.
+                          organizationId:
+                            type: string
+                            format: uuid
+                            description: The unique ID of the organization to which this transaction belongs to.
+                          cardholderId:
+                            type: string
+                            format: uuid
+                            description: The unique ID of the [cardholder](/docs/cardholder-entity) to which this transaction belongs to.
+                          cardAccountId:
+                            type: string
+                            format: uuid
+                            description: The card account to which this transaction belongs to.
+                          card:
+                            type: object
+                            description: Details about the card used for this transaction.
+                            properties:
+                              cardId:
+                                type: string
+                                format: uuid
+                                description: The unique ID of the card to which this transaction belongs to.
+                              label:
+                                type:
+                                - string
+                                - 'null'
+                                description: A short text describing the card. Available only for virtual cards with a `cardConfig` containing `VIRTUAL` or `TRAVEL`. The maximum length is 40 characters.
+                                maxLength: 40
+                              purpose:
+                                type:
+                                - string
+                                - 'null'
+                                description: A short text describing the card. Available only for virtual cards with a `cardConfig` containing `SINGLE_USE`, the maximum length is 40 characters.
+                                maxLength: 40
+                              customFirstName:
+                                type:
+                                - string
+                                - 'null'
+                                description: Optional first name on `TRAVEL` cards which is used on the card, instead of the regular [cardholder](/docs/cardholder-entity) name. If empty, the regular [cardholder](/docs/cardholder-entity) name is used.
+                              customLastName:
+                                type:
+                                - string
+                                - 'null'
+                                description: Optional last name on `TRAVEL` cards which is used on the card, instead of the regular [cardholder](/docs/cardholder-entity) name. If empty, the regular [cardholder](/docs/cardholder-entity) name is used.
+                          customFields:
+                            type:
+                            - array
+                            - 'null'
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                  format: uuid
+                                  description: The id of the custom field used on this transaction.
+                                label:
+                                  type: string
+                                  description: The label of the custom field on this transaction.
+                                value:
+                                  type: string
+                                  description: The value of the custom field on this transaction.
+                          type:
+                            type: string
+                            description: The type of the transaction. For TRANSACTION_CONFIRMED the type STATUS_INQUIRY will not occur.
+                            enum:
+                            - PURCHASE
+                            - CASH_WITHDRAWAL
+                            - REFUND
+                            - CHARGEBACK
+                            - RECHARGE
+                            - STATUS_INQUIRY
+                          acceptanceMethod:
+                            $ref: '#/paths/~1transactions~1details/post/responses/200/content/application~1json/schema/properties/data/items/properties/acceptanceMethod'
+                          transactionDate:
+                            type: string
+                            format: date-time
+                            description: The date-time this transaction was authorized by the card network, e.g. `2023-09-15T11:55:34.527552Z`. Can be null in cases of not successful transactions, like a declined one.
+                          confirmationDate:
+                            type:
+                            - string
+                            - 'null'
+                            format: date-time
+                            description: The date-time this transaction was confirmed by the card network, e.g. `2023-09-19T07:24:52.707296Z`. This property is only available in the response of TRANSACTION_CONFIRMED event and not in the response of TRANSACTION_AUTHORIZED event.
+                          billingAmount:
+                            type: object
+                            description: The amount that was billed to the cardholder, in the currency of the card account.
+                            properties:
+                              value:
+                                type: number
+                                description: The value of the amount, converted to minor units of the currency. E.g. 1 EUR is 100 cents, thus the value is 100.
+                              currency:
+                                type: string
+                                description: The currency of the amount, in ISO 4217 format. E.g. `EUR` for Euro.
+                          transactionAmount:
+                            type: object
+                            description: The amount that was paid to the merchant via this transaction, in the local currency of the merchant.
+                            properties:
+                              value:
+                                type: number
+                                description: The value of the amount, converted to minor units of the currency. E.g. 1 EUR is 100 cents, thus the value is 100.
+                              currency:
+                                type: string
+                                description: The currency of the amount, in ISO 4217 format. E.g. `EUR` for Euro.
+                          merchantRawData:
+                            type: object
+                            description: Raw merchant data as received from the card network, thus the quality of those fields differ greatly between merchants. We do not control the information provided here.
+                            properties:
+                              merchantName:
+                                type:
+                                - string
+                                - 'null'
+                                description: The merchant category code (MCC) description is a short description of the MCC.
+                              merchantCountry:
+                                type:
+                                - string
+                                - 'null'
+                                description: The country of the merchant, in ISO 3166-1 alpha-3 format.
+                                minLength: 3
+                                maxLength: 3
+                              mcc:
+                                type:
+                                - string
+                                - 'null'
+                                description: The merchant category code (MCC) is a four-digit number assigned to a business by an acquiring bank or institution. The MCC is used to classify the business by the type of goods or services it provides.
+                              merchantNameConfirmation:
+                                type:
+                                - string
+                                - 'null'
+                                description: Confirmation message by the merchant. This property is only available in the response of TRANSACTION_CONFIRMED event and not in the response of TRANSACTION_AUTHORIZED event.
+              responses:
+                '200':
+                  description: We expect the partner to return a HTTP 200 status code if the callback was successfully received. On 4xx and 5xx status codes, we will [retry](/docs/callbacks#retries) the callback.
+        transactionCommentUpdated:
+          '{$request.body#/callbackUrl}':
+            description: Callback structure for transaction merchant update (TRANSACTION_COMMENT_UPDATED) events. This event is fired when the `comment` (note) field of transaction is updated.
+            post:
+              parameters:
+              - in: header
+                name: X-Organization-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the organization this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Partner-Organization-Id
+                schema:
+                  type: string
+                  description: 'Filled, if the value `partnerOrganizationId` is [set](/reference/update-organization) by the partner on the organization itself. Referencing the organization identifier of the partner. Example value: `abc123`.'
+              - in: header
+                name: X-Payment-Program-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the payment program this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Callback-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'A unique identifier for this callback. Can be used to deduplicate callbacks to achieve idempotent behavior. See [guides](/docs/callbacks) for more details. Example value: `12a03093-eaad-4ae5-9d8d-42e7f6f8b7c6`.'
+              - in: header
+                name: X-Callback-Created-At
+                schema:
+                  type: string
+                  format: date-time
+                  description: 'The date and time when the callback was created. Can be used to reorder callbacks. See [guides](/docs/callbacks) for more details. Example value: `2024-03-15T15:55:58.623375258Z`.'
+              requestBody:
+                content:
+                  application/json:
+                    schema:
+                      allOf:
+                      - $ref: '#/paths/~1cards~1subscription/post/callbacks/cardUpdated/{$request.body#~1callbackUrl}/post/requestBody/content/application~1json/schema/allOf/0'
+                      - type: object
+                        properties:
+                          transactionId:
+                            type: string
+                            format: uuid
+                            description: The unique ID of the transaction.
+                          organizationId:
+                            type: string
+                            format: uuid
+                            description: The unique ID of the organization to which this transaction belongs to.
+                          cardAccountId:
+                            type: string
+                            format: uuid
+                            description: The card account to which this transaction belongs to.
+                          commentBefore:
+                            type:
+                            - string
+                            - 'null'
+                            description: The comment before the update happened.
+                          commentAfter:
+                            type:
+                            - string
+                            - 'null'
+                            description: The new comment after the update.
+              responses:
+                '200':
+                  description: We expect the partner to return a HTTP 200 status code if the callback was successfully received. On 4xx and 5xx status codes, we will [retry](/docs/callbacks#retries) the callback.
+        transactionReceiptUploadEnabledUpdated:
+          '{$request.body#/callbackUrl}':
+            description: Callback structure for transaction receiptUploadEnabled update (TRANSACTION_RECEIPT_UPLOAD_ENABLED_UPDATED) events. This event is fired when the `receiptUploadEnabled` field of transaction is updated. On Pliant UI, this value is updatable via the `Receipt Needed` toggle on transaction details modal.
+            post:
+              parameters:
+              - in: header
+                name: X-Organization-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the organization this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Partner-Organization-Id
+                schema:
+                  type: string
+                  description: 'Filled, if the value `partnerOrganizationId` is [set](/reference/update-organization) by the partner on the organization itself. Referencing the organization identifier of the partner. Example value: `abc123`.'
+              - in: header
+                name: X-Payment-Program-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the payment program this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Callback-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'A unique identifier for this callback. Can be used to deduplicate callbacks to achieve idempotent behavior. See [guides](/docs/callbacks) for more details. Example value: `12a03093-eaad-4ae5-9d8d-42e7f6f8b7c6`.'
+              - in: header
+                name: X-Callback-Created-At
+                schema:
+                  type: string
+                  format: date-time
+                  description: 'The date and time when the callback was created. Can be used to reorder callbacks. See [guides](/docs/callbacks) for more details. Example value: `2024-03-15T15:55:58.623375258Z`.'
+              requestBody:
+                content:
+                  application/json:
+                    schema:
+                      allOf:
+                      - $ref: '#/paths/~1cards~1subscription/post/callbacks/cardUpdated/{$request.body#~1callbackUrl}/post/requestBody/content/application~1json/schema/allOf/0'
+                      - type: object
+                        properties:
+                          transactionId:
+                            type: string
+                            format: uuid
+                            description: The unique ID of the transaction.
+                          organizationId:
+                            type: string
+                            format: uuid
+                            description: The unique ID of the organization to which this transaction belongs to.
+                          cardAccountId:
+                            type: string
+                            format: uuid
+                            description: The card account to which this transaction belongs to.
+                          receiptUploadEnabled:
+                            type: boolean
+                            description: Describes if receipts can be added to the transaction.
+              responses:
+                '200':
+                  description: We expect the partner to return a HTTP 200 status code if the callback was successfully received. On 4xx and 5xx status codes, we will [retry](/docs/callbacks#retries) the callback.
+    delete:
+      summary: 'Callback: Remove'
+      description: Remove a callback subscription for this entity.
+      tags:
+      - Transactions
+      operationId: remove-transaction-subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                eventTypes:
+                  type: array
+                  description: The event types to unsubscribe from.
+                  items:
+                    type: string
+                    enum:
+                    - TRANSACTION_CREATED
+                    - TRANSACTION_UPDATED
+                    - TRANSACTION_TYPE_UPDATED
+                    - TRANSACTION_STATUS_CHANGED
+                    - TRANSACTION_AMOUNT_CHANGED
+                    - TRANSACTION_MERCHANT_UPDATED
+                    - TRANSACTION_AUTH_CODE
+                    - TRANSACTION_AUTHORIZED
+                    - TRANSACTION_CONFIRMED
+                    - TRANSACTION_COMMENT_UPDATED
+                    - TRANSACTION_RECEIPT_UPLOAD_ENABLED_UPDATED
+              required:
+              - eventTypes
+      responses:
+        '200':
+          description: Ok
+  /transactions/{transactionId}:
+    get:
+      summary: Transaction Details (Single)
+      deprecated: true
+      description: 'Returns the details of a single transaction by its ID.
+
+
+        **This endpoint has changed in comparison to the previous version of the API.** The following changes were made:
+
+        - we removed the following data from the response body: `merchantId` (field), `merchantName` (field)
+
+        - we added the following data to the response body: `merchantData` (object), `merchantRawData` (object), `authCode` (field)'
+      tags:
+      - Transactions
+      operationId: get-transactions-detail
+      parameters:
+      - name: transactionId
+        in: path
+        required: true
+        description: The unique identifier of the transaction.
+        schema:
+          type: string
+          format: uuid
+          description: The unique identifier of the transaction.
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactionId:
+                    type: string
+                    format: uuid
+                    description: The unique ID of the transaction.
+                  organizationId:
+                    type: string
+                    format: uuid
+                    description: The unique ID of the organization to which this transaction belongs to.
+                  cardholderId:
+                    type: string
+                    format: uuid
+                    description: The unique ID of the [cardholder](/docs/cardholder-entity) to which this transaction belongs to.
+                  cardId:
+                    type: string
+                    format: uuid
+                    description: The unique ID of the card to which this transaction belongs to.
+                  status:
+                    type: string
+                    description: The status of the transaction.
+                    enum:
+                    - DECLINED
+                    - PENDING
+                    - REVERSED
+                    - CONFIRMED
+                    - BOOKED
+                  type:
+                    type: string
+                    description: The type of the transaction.
+                    enum:
+                    - PURCHASE
+                    - CASH_WITHDRAWAL
+                    - REFUND
+                    - CHARGEBACK
+                    - RECHARGE
+                    - STATUS_INQUIRY
+                  partnerSubmissionStatus:
+                    type: string
+                    enum:
+                    - NOT_SYNCED
+                    - SYNCED
+                    - TEMP_LOCKED
+                    - LOCKED
+                    description: This status can be driven by the partner to mark transactions on Pliant-side as consumed by the partner. `TEMP_LOCKED` makes transaction immutable for cardholders within Pliant apps. `LOCKED` makes them immutable for all users. `TEMP_LOCKED` can be changed to `SYNCED`. `LOCKED` is the final state that cannot be modified anymore
+                  partnerSubmissionStatusSyncedAt:
+                    type:
+                    - string
+                    - 'null'
+                    format: date-time
+                    description: The date-time the `partnerSubmissionStatus` was changed to `SYNCED`.
+                  partnerSubmissionStatusTempLockedAt:
+                    type:
+                    - string
+                    - 'null'
+                    format: date-time
+                    description: The date-time the `partnerSubmissionStatus` was changed to `TEMP_LOCKED`.
+                  partnerSubmissionStatusLockedAt:
+                    type:
+                    - string
+                    - 'null'
+                    format: date-time
+                    description: The date-time the `partnerSubmissionStatus` was changed to `LOCKED`.
+                  category:
+                    type: string
+                    description: The category of the transaction. This groups together similar merchants into Pliant-defined categories.
+                    enum:
+                    - ADVERTISING_AND_MARKETING
+                    - COMPUTING_AND_SOFTWARE
+                    - EDUCATION_AND_TRAINING
+                    - ELECTRONICS_AND_IT_EQUIPMENT
+                    - ENTERTAINMENT_AND_WELLNESS
+                    - FOOD_AND_DRINKS
+                    - GIFTS_AND_VOUCHERS
+                    - MATERIALS_AND_PACKAGING
+                    - OFFICE_SUPPLIES_AND_EQUIPMENT
+                    - SERVICES
+                    - TRAVEL_AND_ACCOMMODATION
+                    - HEALTHCARE
+                    - OTHER
+                  billingAmount:
+                    type: object
+                    description: The amount that was billed to the cardholder, in the currency of the card account.
+                    properties:
+                      value:
+                        type: number
+                        description: The value of the amount, converted to minor units of the currency. E.g. 1 EUR is 100 cents, thus the value is 100.
+                      currency:
+                        type: string
+                        description: The currency of the amount, in ISO 4217 format. E.g. `EUR` for Euro.
+                  transactionAmount:
+                    type: object
+                    description: The amount that was paid to the merchant via this transaction, in the local currency of the merchant.
+                    properties:
+                      value:
+                        type: number
+                        description: The value of the amount, converted to minor units of the currency. E.g. 1 EUR is 100 cents, thus the value is 100.
+                      currency:
+                        type: string
+                        description: The currency of the amount, in ISO 4217 format. E.g. `EUR` for Euro.
+                  transactionCountry:
+                    type: string
+                    description: ISO 3166-1 alpha-3 code of the country the transaction was made it, e.g. `DEU` for Germany or `NLD` for Netherlands. You can find a list of valid country code on [Wikipedia](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3).
+                    minLength: 3
+                    maxLength: 3
+                  transactionLocalTime:
+                    type:
+                    - string
+                    - 'null'
+                    format: date-time
+                    description: The date-time the transaction was made in the local time of the merchant.
+                  createdAt:
+                    type: string
+                    format: date-time
+                    description: The date-time the transaction was first recognized by Pliant, e.g. `2023-09-15T11:55:34.527552Z`.
+                  authorizedAt:
+                    type:
+                    - string
+                    - 'null'
+                    format: date-time
+                    description: The date-time this transaction was authorized by the card network, e.g. `2023-09-15T11:55:34.527552Z`. Can be null in cases of not successful transactions, like a declined one.
+                  confirmedAt:
+                    type:
+                    - string
+                    - 'null'
+                    format: date-time
+                    description: The date-time this transaction was confirmed by the card network, e.g. `2023-09-19T07:24:52.707296Z`. Value is null, until the transaction is confirmed.
+                  bookedAt:
+                    type:
+                    - string
+                    - 'null'
+                    format: date
+                    description: The date this transaction was booked by Pliant against the internal bank account of the organization, e.g. `2023-09-19`. Value is null, until the transaction is booked.
+                  reversedAt:
+                    type:
+                    - string
+                    - 'null'
+                    format: date-time
+                    description: The date-time this transaction was reversed by the card network, e.g. `2023-09-15T11:55:34.527552Z`. Value is only filled, if the transaction is reversed.
+                  declineReason:
+                    type:
+                    - object
+                    - 'null'
+                    description: "Filled, if the transaction was declined. The decline reason `type`, together with `title` and `description` in all supported languages. E.g.:\n```\n{\n  \"type\": \"LOCKED_CARD\",\n  \"title\": {\n    \"en\": \"Card locked\",\n  },\n  \"description\": {\n    \"en\": \"The card is locked. You can unlock the card in the Wallet section of the cardholder app.\",\n  }\n}\n```\nIf the transaction status is anything else but `DECLINED` the object `declineReason` returns `NULL`\n"
+                    properties:
+                      type:
+                        type: string
+                        description: 'Why the transaction was declined. Set only when the transaction status is `DECLINED`.
+
+                          On the transaction details response, `title` and `description` carry the display text for this type.
+
+                          '
+                        example: LOCKED_CARD
+                        enum:
+                        - CARD_ACCEPTANCE_NOT_ALLOWED
+                        - CARD_CONTROLS_DATETIME_LOCKED
+                        - CREDIT_ORG_LIMIT_EXCEEDED
+                        - DECLINE_REASON_NOT_DETECTED
+                        - DISALLOWED_MCC
+                        - DO_NOT_HONOUR
+                        - EXCEED_AMOUNT_VELOCITY_LIMIT
+                        - EXCEED_FREQUENCY_VELOCITY_LIMIT
+                        - EXCEED_ATM_AMOUNT_VELOCITY_LIMIT
+                        - EXPIRED_CARD
+                        - INCORRECT_CVV2
+                        - INCORRECT_EXPIRY_DATE
+                        - INCORRECT_PIN
+                        - INSUFFICIENT_FUNDS
+                        - INSUFFICIENT_FUNDS_GPS
+                        - INVALID_AMOUNT
+                        - INVALID_CARD_NUMBER
+                        - ISSUER_INOPERATIVE
+                        - LOCKED_CARD
+                        - LOST_CARD
+                        - MONTHLY_CARD_LIMIT_EXCEEDED
+                        - PENDING_CARD
+                        - PIN_TRIES_EXCEEDED
+                        - PIN_VALIDATION_FAILURE
+                        - POSTAL_CODE_NOT_ALLOWED
+                        - PREFUND_ORG_LIMIT_EXCEEDED
+                        - SCA_REQUIRED_PHYSICAL
+                        - SCA_REQUIRED_PHYSICAL_OFFLINE
+                        - SCA_REQUIRED_PHYSICAL_ONLINE
+                        - SCA_REQUIRED_VIRTUAL
+                        - SINGLE_USE_CARD
+                        - STOLEN_CARD
+                        - TERMINATED_CARD
+                        - TRANSACTION_LIMIT_EXCEEDED
+                        - TRANSACTION_TYPE_NOT_ALLOWED
+                        - TRANSACTION_CATEGORY_NOT_ALLOWED
+                        - TRANSACTION_COUNT_EXCEEDED
+                        - TRANSACTION_MERCH_STRING_NOT_ALLOWED
+                        - TRANSACTION_MERCHIDDE42_NOT_ALLOWED
+                        - TRANSACTION_MCC_NOT_ALLOWED
+                        - ACCEPTANCE_METHOD_NOT_ALLOWED
+                        - MERCHANT_COUNTRY_NOT_ALLOWED_US
+                        - MERCHANT_COUNTRY_MISSING
+                        - MERCHANT_COUNTRY_NOT_ALLOWED
+                        - TRANSACTION_CURRENCY_NOT_ALLOWED
+                        - THREDD_FRAUD_ALERT
+                        - ADDITIONAL_LIMIT_EXCEEDED
+                      title:
+                        type: object
+                        additionalProperties:
+                          type: string
+                        example:
+                          en: Card locked
+                      description:
+                        type: object
+                        additionalProperties:
+                          type: string
+                        example:
+                          en: The card is locked. You can unlock the card in the Wallet section of the cardholder app.
+                  linkedTransactionId:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                    description: Optional reference to any original transaction, used for recharges, chargebacks and chargeback reversals.
+                  receiptCount:
+                    type: integer
+                    description: Number of uploaded receipts to this transaction.
+                    minLength: 0
+                  receiptIds:
+                    type: array
+                    items:
+                      type: string
+                      format: uuid
+                    description: The receipts attached to this transaction, if any. Otherwise, the array is empty.
+                  receiptUploadEnabled:
+                    type: boolean
+                    description: This field describes if the transaction is waiting for a receipt, or if no receipt is expected for this transaction. If set to `true` its possible to upload receipts to the transaction, if set to `false` it is not possible to upload receipts to the transaction.
+                  comment:
+                    type:
+                    - string
+                    - 'null'
+                    description: A cardholder-defined comment for this transaction.
+                  merchantData:
+                    type: object
+                    description: Pliant's merchant data. If the merchant is not known to Pliant, the object is `null`.
+                    properties:
+                      pliantMerchantId:
+                        type: string
+                        format: uuid
+                        description: Pliant's merchant ID (can be specific for each organization).
+                      displayName:
+                        type: string
+                        description: Display merchant name that can be used to show additionally next to the raw merchant description.
+                      logoPath:
+                        type:
+                        - string
+                        - 'null'
+                        description: URL to the logo of the merchant, if there is any.
+                  merchantRawData:
+                    type: object
+                    description: Raw merchant data as received from the card network, thus the quality of those fields differ greatly between merchants. We do not control the information provided here.
+                    properties:
+                      mcc:
+                        type:
+                        - string
+                        - 'null'
+                        description: The merchant category code (MCC) is a four-digit number assigned to a business by an acquiring bank or institution. The MCC is used to classify the business by the type of goods or services it provides.
+                      mccDesc:
+                        type:
+                        - string
+                        - 'null'
+                        description: The merchant category code (MCC) description is a short description of the MCC.
+                      merchantStreet:
+                        type:
+                        - string
+                        - 'null'
+                        description: The street of the merchant.
+                      merchantCity:
+                        type:
+                        - string
+                        - 'null'
+                        description: The city of the merchant.
+                      merchantRegion:
+                        type:
+                        - string
+                        - 'null'
+                        description: The region of the merchant.
+                      merchantPostcode:
+                        type:
+                        - string
+                        - 'null'
+                        description: The postcode of the merchant.
+                      merchantCountry:
+                        type:
+                        - string
+                        - 'null'
+                        description: The country of the merchant, in ISO 3166-1 alpha-3 format.
+                        minLength: 3
+                        maxLength: 3
+                      merchantPhone:
+                        type:
+                        - string
+                        - 'null'
+                        description: The phone number of the merchant.
+                      merchantUrl:
+                        type:
+                        - string
+                        - 'null'
+                        description: The URL of the merchant.
+                      merchantNameOther:
+                        type:
+                        - string
+                        - 'null'
+                        description: The name of the merchant in the local language.
+                      merchantLegalName:
+                        type:
+                        - string
+                        - 'null'
+                        description: The legal name of the merchant.
+                      merchantTaxId:
+                        type:
+                        - string
+                        - 'null'
+                        description: The tax ID of the merchant.
+                      merchantContact:
+                        type:
+                        - string
+                        - 'null'
+                        description: The contact information of the merchant.
+                      merchantTerminalId:
+                        type:
+                        - string
+                        - 'null'
+                        description: The terminal ID of the merchant used to make this transaction.
+                      descriptionAuthorization:
+                        type:
+                        - string
+                        - 'null'
+                        description: Authorization message by the merchant.
+                      descriptionConfirmation:
+                        type:
+                        - string
+                        - 'null'
+                        description: Confirmation message by the merchant.
+                  authCode:
+                    type:
+                    - string
+                    - 'null'
+                    description: Authorization code used for this transaction.
+                  paymentDate:
+                    type:
+                    - string
+                    - 'null'
+                    format: date
+                    description: The date on which the outstanding amount of this transaction was paid back to Pliant. It basically is the date the bank settlement was received by Pliant. This field is only filled after the next payment frequency cycle of this organization.
+                  paymentReference:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                    description: The reference to the payment itself. Check the [payment API](getpaymentsdetail) to get details about the payment. This field is only filled after the next payment frequency cycle of this organization.
+                  wallet:
+                    type: string
+                    description: If the transaction was made using a mobile wallet (`APPLE` or `ANDROID`), the respective wallet type is returned. Otherwise, the field is `OTHER`.
+                    enum:
+                    - APPLE
+                    - ANDROID
+                    - OTHER
+                  fxFee:
+                    type: object
+                    description: The foreign exchange fee that was charged for this transaction, if any.
+                    properties:
+                      fxFeePercentage:
+                        type:
+                        - number
+                        - 'null'
+                        description: 'The per-organization fee (as a percentage of the transaction amount) that is charged for foreign exchange transactions. This value is specific to this organization. Example: `2.1`.'
+                        format: float
+                        example: 2.1
+                        minimum: 0
+                        maximum: 100
+                      fxFeeAmount:
+                        type:
+                        - object
+                        - 'null'
+                        description: 'The specific amount of the foreign exchange fee that was charged for this transaction. Example: `0.21 EUR`.'
+                        properties:
+                          value:
+                            type: number
+                            description: The value of the monetary amount, converted to minor units of the currency. For instance 1.00 EUR is 100 cents, thus the value here is `100`. See our [guides](/docs/monetary-values) for more details about how to handle monetary amounts.
+                            example: 21
+                          currency:
+                            type: string
+                            description: The currency of the monetary amount in ISO 4217 format, for example `EUR` for Euro or `USD` for US Dollar.
+                            example: EUR
+                  personal:
+                    type: boolean
+                    description: Indicates transaction was done for personal purpose.
+                  acquirerReferenceNumber:
+                    type: string
+                    description: The acquirer reference number as provided by the card network for the transaction.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /transactions/{transactionId}/category:
+    patch:
+      summary: Update Transaction Category
+      description: Updates category of a transaction. In case of split transactions all split transactions will have the new category assigned.
+      tags:
+      - Transactions
+      operationId: update-transaction-category
+      parameters:
+      - name: transactionId
+        in: path
+        required: true
+        description: The unique identifier of the transaction.
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+              - type: object
+                required:
+                - category
+                properties:
+                  category:
+                    type: string
+                    description: The payment category of the transaction.
+                    enum:
+                    - ADVERTISING_AND_MARKETING
+                    - COMPUTING_AND_SOFTWARE
+                    - EDUCATION_AND_TRAINING
+                    - ELECTRONICS_AND_IT_EQUIPMENT
+                    - ENTERTAINMENT_AND_WELLNESS
+                    - FOOD_AND_DRINKS
+                    - GIFTS_AND_VOUCHERS
+                    - MATERIALS_AND_PACKAGING
+                    - OFFICE_SUPPLIES_AND_EQUIPMENT
+                    - SERVICES
+                    - TRAVEL_AND_ACCOMMODATION
+                    - HEALTHCARE
+                    - OTHER
+      responses:
+        '204':
+          description: Ok
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /transactions/{transactionId}/comment:
+    patch:
+      summary: Update Comment
+      description: Updates the comment of a single transaction
+      tags:
+      - Transactions
+      operationId: update-transaction-comment
+      parameters:
+      - name: transactionId
+        in: path
+        required: true
+        description: The unique identifier of the transaction.
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comment:
+                  type: string
+                  maxLength: 200
+                  description: The comment to be added to the transaction. Maximum length is 200 characters.
+                  example: Transaction is approved
+              required:
+              - comment
+      responses:
+        '204':
+          description: Ok
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '409':
+          $ref: '#/paths/~1card-accounts/post/responses/409'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+    delete:
+      summary: Delete comment
+      description: Deletes the comment of a single transaction
+      tags:
+      - Transactions
+      operationId: delete-transaction-comment
+      parameters:
+      - name: transactionId
+        in: path
+        required: true
+        description: The unique identifier of the transaction.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: Ok
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '409':
+          $ref: '#/paths/~1card-accounts/post/responses/409'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /transactions/{transactionId}/partner-submission-status:
+    post:
+      summary: Update Partner Submission Status
+      description: Updates the partnerSubmissionStatus of a single transaction. See documentation for more information.
+      tags:
+      - Transactions
+      operationId: update-transaction-partner-submission-status
+      parameters:
+      - name: transactionId
+        in: path
+        required: true
+        description: The unique identifier of the transaction.
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                partnerSubmissionStatus:
+                  type: string
+                  enum:
+                  - NOT_SYNCED
+                  - SYNCED
+                  - TEMP_LOCKED
+                  - LOCKED
+                  description: The status `NOT_SYNCED` is the default status of a transaction, it can be changed to `SYNCED` by the partner, e.g. if the partner consumed a transaction successfully. The status `TEMP_LOCKED` makes the transaction immutable for cardholders within Pliant's apps - it is a reversible status and can be changed back to `SYNCED`. `LOCKED` makes a transaction immutable for all users. `LOCKED` is the final status which cannot be modified anymore.
+              required:
+              - partnerSubmissionStatus
+      responses:
+        '204':
+          description: Ok
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /transactions/{transactionId}/receiptUpload:
+    patch:
+      summary: Update Receipt Upload Toggle
+      description: Updates the flag on a given transaction to signal if a receipt is needed to be uploaded or not. Some transaction do not require any receipt, so this flag can be set to `false` to signal that no receipt is needed.
+      tags:
+      - Transactions
+      operationId: update-transaction-receipt-upload
+      parameters:
+      - name: transactionId
+        in: path
+        required: true
+        description: The unique identifier of the transaction.
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                receiptUploadEnabled:
+                  type: boolean
+                  description: Flag to signal if a receipt is needed to be uploaded or not. `true` if a receipt is needed, `false` otherwise.
+              required:
+              - receiptUploadEnabled
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '409':
+          $ref: '#/paths/~1card-accounts/post/responses/409'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: This API uses oAuth2 with client credentials flow to [obtain the Bearer Token](/docs/authenticated-api-usage).
+      bearerFormat: JWT
+x-provenance:
+  method: searched
+  source: https://customer-api.getpliant.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://customer-api.getpliant.com/reference/activate-physical-card.md
+  - https://customer-api.getpliant.com/reference/assign-project-team.md
+  - https://customer-api.getpliant.com/reference/assign-to-team.md
+  - https://customer-api.getpliant.com/reference/bulk-upsert-subscriptions.md
+  - https://customer-api.getpliant.com/reference/card-pan-and-cvv-pci-vault.md
+  - https://customer-api.getpliant.com/reference/card-pan-tokenized-from-pci-proxy.md
+  - https://customer-api.getpliant.com/reference/claim-card-as-copilot.md
+  - https://customer-api.getpliant.com/reference/create-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-transfer.md
+  - https://customer-api.getpliant.com/reference/create-card-account.md
+  - https://customer-api.getpliant.com/reference/create-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-subscription.md
+  - https://customer-api.getpliant.com/reference/create-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/create-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/create-custom-field.md
+  - https://customer-api.getpliant.com/reference/create-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/create-project.md
+  - https://customer-api.getpliant.com/reference/create-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/create-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/create-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/create-team.md
+  - https://customer-api.getpliant.com/reference/create-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/deactivate-card-account.md
+  - https://customer-api.getpliant.com/reference/deactivate-cardholder.md
+  - https://customer-api.getpliant.com/reference/deactivate-team.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field.md
+  - https://customer-api.getpliant.com/reference/delete-project.md
+  - https://customer-api.getpliant.com/reference/delete-receipt.md
+  - https://customer-api.getpliant.com/reference/delete-subscription.md
+  - https://customer-api.getpliant.com/reference/delete-team.md
+  - https://customer-api.getpliant.com/reference/delete-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/generate-test-transactions-in-sandbox.md
+  - https://customer-api.getpliant.com/reference/get-account-entries.md
+  - https://customer-api.getpliant.com/reference/get-accounting-transactions-batch.md
+  - https://customer-api.getpliant.com/reference/get-available-cards.md
+  - https://customer-api.getpliant.com/reference/get-callback-details.md
+  - https://customer-api.getpliant.com/reference/get-callback-log.md
+  - https://customer-api.getpliant.com/reference/get-callback-subscriptions.md
+  - https://customer-api.getpliant.com/reference/get-callback.md
+  - https://customer-api.getpliant.com/reference/get-card-account-details.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts-available-currencies.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts.md
+  - https://customer-api.getpliant.com/reference/get-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/get-card-pin.md
+  - https://customer-api.getpliant.com/reference/get-cardholder-details.md
+  - https://customer-api.getpliant.com/reference/get-cards.md
+  - https://customer-api.getpliant.com/reference/get-custom-field-options.md
+  - https://customer-api.getpliant.com/reference/get-custom-fields.md
+  - https://customer-api.getpliant.com/reference/get-multiple-card-details.md
+  - https://customer-api.getpliant.com/reference/get-organization-details.md
+  - https://customer-api.getpliant.com/reference/get-otp-for-pci-widget.md
+  - https://customer-api.getpliant.com/reference/get-payments-detail.md
+  - https://customer-api.getpliant.com/reference/get-payments.md
+  - https://customer-api.getpliant.com/reference/get-projects.md
+  - https://customer-api.getpliant.com/reference/get-receipt-automatcher-status.md
+  - https://customer-api.getpliant.com/reference/get-receipt-detail.md
+  - https://customer-api.getpliant.com/reference/get-receipts.md
+  - https://customer-api.getpliant.com/reference/get-single-card-details.md
+  - https://customer-api.getpliant.com/reference/get-statement-csv.md
+  - https://customer-api.getpliant.com/reference/get-statement-detail.md
+  - https://customer-api.getpliant.com/reference/get-statementpdf.md
+  - https://customer-api.getpliant.com/reference/get-statements.md
+  - https://customer-api.getpliant.com/reference/get-teams.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail-batch.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail.md
+  - https://customer-api.getpliant.com/reference/get-transactions.md
+  - https://customer-api.getpliant.com/reference/invite-cardholders.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant-with-pci.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant.md
+  - https://customer-api.getpliant.com/reference/issue-card.md
+  - https://customer-api.getpliant.com/reference/list-cardholders.md
+  - https://customer-api.getpliant.com/reference/list-organizations.md
+  - https://customer-api.getpliant.com/reference/load-cards-batch.md
+  - https://customer-api.getpliant.com/reference/lock-card.md
+  - https://customer-api.getpliant.com/reference/metadata-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/receipt-as-merged-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-as-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-original.md
+  - https://customer-api.getpliant.com/reference/receipt-thumbnail.md
+  - https://customer-api.getpliant.com/reference/register-cardholders.md
+  - https://customer-api.getpliant.com/reference/remove-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cards-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/replace-card.md
+  - https://customer-api.getpliant.com/reference/resend-callbacks.md
+  - https://customer-api.getpliant.com/reference/search-callbacks.md
+  - https://customer-api.getpliant.com/reference/simulate-prefund-payment.md
+  - https://customer-api.getpliant.com/reference/simulate-transaction-status-transition.md
+  - https://customer-api.getpliant.com/reference/terminate-card.md
+  - https://customer-api.getpliant.com/reference/unassign-from-team.md
+  - https://customer-api.getpliant.com/reference/unassign-project-team.md
+  - https://customer-api.getpliant.com/reference/unlock-card.md
+  - https://customer-api.getpliant.com/reference/update-card-account.md
+  - https://customer-api.getpliant.com/reference/update-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/update-card-copilots.md
+  - https://customer-api.getpliant.com/reference/update-card-label.md
+  - https://customer-api.getpliant.com/reference/update-card-limit.md
+  - https://customer-api.getpliant.com/reference/update-card-validity-period.md
+  - https://customer-api.getpliant.com/reference/update-card.md
+  - https://customer-api.getpliant.com/reference/update-cardholders.md
+  - https://customer-api.getpliant.com/reference/update-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/update-custom-field.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-accounting-transaction.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-card.md
+  - https://customer-api.getpliant.com/reference/update-project.md
+  - https://customer-api.getpliant.com/reference/update-team.md
+  - https://customer-api.getpliant.com/reference/update-transaction-category.md
+  - https://customer-api.getpliant.com/reference/update-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status-batch.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status.md
+  - https://customer-api.getpliant.com/reference/update-transaction-receipt-upload.md
+  - https://customer-api.getpliant.com/reference/upload-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/upload-receipt.md
+  merge:
+    pages: 128
+    deduped: 452
+    conflicts_kept_first: 0

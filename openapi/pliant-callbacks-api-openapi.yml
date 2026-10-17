@@ -1,0 +1,824 @@
+openapi: 3.2.0
+info:
+  contact:
+    name: API Support
+    email: support@getpliant.com
+    url: https://www.getpliant.com
+  title: Pliant Customer Callbacks API
+  description: Pliant Customer API
+  version: 2.1.0
+  license:
+    name: MIT
+    url: https://opensource.org/license/MIT
+servers:
+- url: https://partner-api.getpliant.com/api
+  description: Pliant Production Server
+- url: https://sandbox.partner-api.getpliant.com/api
+  description: Pliant Sandbox Server
+- url: https://pci-api.getpliant.com
+  description: PCI Vault Production Server
+- url: https://pci-sandbox.partner-api.getpliant.com
+  description: PCI Vault Sandbox Server
+security:
+- bearerAuth: []
+tags:
+- name: Callbacks
+  description: This tag is for operations related to callbacks
+paths:
+  /callbacks:
+    get:
+      summary: Search Callbacks
+      description: Get a list of all callbacks we produced for you, whether we could send them to you or not. This log contains all callbacks Pliant produced, together with a status and further metadata to let you investigate problems etc. You can add optional filters to narrow down the results. To get the payload of a specific callback, use the `GET /callbacks/{callbackId}` endpoint. To re-trigger delivery of one or more callbacks, use the `POST /callbacks/resend` endpoint.
+      tags:
+      - Callbacks
+      operationId: search-callbacks
+      parameters:
+      - name: organizationId
+        in: query
+        description: Filter by organization id.
+        schema:
+          type: string
+          format: uuid
+        required: false
+      - name: entityId
+        in: query
+        deprecated: true
+        description: Filter by single entity id.
+        schema:
+          type: string
+          format: uuid
+        required: false
+      - name: entityIds
+        in: query
+        description: Filter by (multiple) entity ids.
+        schema:
+          type: array
+          items:
+            type: string
+            format: uuid
+        required: false
+      - name: eventType
+        in: query
+        description: Filter by event type.
+        schema:
+          type: string
+        required: false
+      - name: status
+        in: query
+        description: Filter by status. The status of the callback. The callback starts as `UNSENT`, transitions to `IN_PROGRESS`, then to `SENT` or `FAILED`. If the callback is skipped (mostly due to manual interventions), it will be marked as `SKIPPED`. The status `TO_BE_SEND_IMMEDIATELY` is a short-lived, intermediate status similar to `UNSENT`.
+        schema:
+          type: string
+          enum:
+          - UNSENT
+          - IN_PROGRESS
+          - SENT
+          - FAILED
+          - SKIPPED
+          - TO_BE_SEND_IMMEDIATELY
+        required: false
+      - name: fromDate
+        in: query
+        description: The `from` date to filter by as zero-offset UTC time. The date boundary is inclusive. Meaning we compare with `>=`.
+        schema:
+          type: string
+          format: date-time
+          example: '2024-07-19T15:00:00.000000Z'
+        required: false
+      - name: toDate
+        in: query
+        description: The `to` date to filter by as zero-offset UTC time. The date boundary is inclusive. Meaning we compare with `<=`.
+        schema:
+          type: string
+          format: date-time
+          example: '2024-07-19T15:00:00.000000Z'
+        required: false
+      - name: byDateField
+        in: query
+        description: The date field to filter by if `fromDate` and `toDate` are present.
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - sentAt
+          default: createdAt
+        required: false
+      - name: limit
+        in: query
+        description: The maximum number of items to return per page. The default value if not provided is 100, the maximum allowed value is 1000.
+        schema:
+          type: integer
+      - name: page
+        in: query
+        description: The page number to return, starting with 0, this counts up to the total number of pages. The total number of pages is determined by the total number of records divided by the limit.
+        schema:
+          type: integer
+      - name: sortBy
+        in: query
+        description: The field to sort by.
+        schema:
+          type: string
+          enum:
+          - organizationId
+          - status
+          - eventType
+          - createdAt
+      - name: sortDirection
+        in: query
+        description: The direction to sort by.
+        schema:
+          type: string
+          enum:
+          - ASC
+          - DESC
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    description: Callback log entries, sorted and filtered according to the request parameters.
+                    items:
+                      type: object
+                      required:
+                      - id
+                      - entityId
+                      - eventType
+                      - organizationId
+                      - status
+                      - createdAt
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          description: The ID of the callback log entry.
+                        entityId:
+                          type: string
+                          format: uuid
+                          description: The ID of the entity the callback is about. Together with the `eventType`, this uniquely identifies the business entity.
+                        eventType:
+                          type: string
+                          description: The type of the event that triggered the callback.
+                        organizationId:
+                          type: string
+                          format: uuid
+                          description: The ID of the organization the callback is about.
+                        status:
+                          type: string
+                          enum:
+                          - UNSENT
+                          - IN_PROGRESS
+                          - SENT
+                          - FAILED
+                          - SKIPPED
+                          - TO_BE_SEND_IMMEDIATELY
+                          description: The status of the callback. The callback starts as `UNSENT`, transitions to `IN_PROGRESS`, then to `SENT` or `FAILED`. If the callback is skipped (mostly due to manual interventions), it will be marked as `SKIPPED`. The status `TO_BE_SEND_IMMEDIATELY` is a short-lived, intermediate status similar to `UNSENT`.
+                        httpEndpoint:
+                          type:
+                          - string
+                          - 'null'
+                          description: The HTTP endpoint from the partners backend that was called for this callback.
+                        httpResponseCode:
+                          type:
+                          - string
+                          - 'null'
+                          description: The latest HTTP response code from the partners backend for this callback.
+                        attemptCount:
+                          type:
+                          - integer
+                          - 'null'
+                          description: The amount of attempts to send the callback, includes retries.
+                        createdAt:
+                          type: string
+                          format: date-time
+                          description: The date and time when the callback was created in Pliant's database.
+                        sentAt:
+                          type:
+                          - string
+                          - 'null'
+                          format: date-time
+                          description: The date and time when the callback was successfully sent to the partners backend.
+                  hasNextPage:
+                    type: boolean
+                    description: Indicates whether there is a next page available.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /callbacks/resend:
+    post:
+      summary: Resend Callbacks
+      description: 'Re-trigger delivery of previously produced webhook callbacks identified by their callback ids. Use this endpoint to recover from callbacks that were missed or could not be processed by your system.
+
+        Use the `GET /callbacks` endpoint to look up the ids of callbacks you want to resend.
+
+        Each callback''s owning organization must be within your scope of access. The request is rejected with `403 Forbidden` if any of the provided callback ids is unknown or refers to an organization you are not authorized for. A maximum of 1000 callback ids can be resent in a single call.
+
+        A successful call returns `202 Accepted` immediately — callbacks are delivered asynchronously through the standard callback delivery pipeline (with retries and back-off) and will appear in the callback log under their existing callback id.'
+      tags:
+      - Callbacks
+      operationId: resend-callbacks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - callbackIds
+              properties:
+                callbackIds:
+                  type: array
+                  description: The ids of the callbacks to resend. Must contain between 1 and 1000 ids. Each id must refer to an existing callback whose owning organization is within your scope of access.
+                  minItems: 1
+                  maxItems: 1000
+                  items:
+                    type: string
+                    format: uuid
+      responses:
+        '202':
+          description: The resend request was accepted. The listed callbacks will be re-delivered asynchronously through the standard callback delivery pipeline.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resendCount:
+                    type: integer
+                    description: The number of callbacks that were scheduled for re-delivery.
+                    example: 1
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /callbacks/{callbackId}:
+    get:
+      summary: Get Callback
+      description: Get details about a specific callback, like its payload. This endpoint is useful for debugging and investigating issues with callbacks.
+      tags:
+      - Callbacks
+      operationId: get-callback
+      parameters:
+      - name: callbackId
+        in: path
+        description: The callback id for which to fetch details.
+        schema:
+          type: string
+          format: uuid
+        required: true
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                    description: The ID of the callback log entry.
+                  entityId:
+                    type: string
+                    format: uuid
+                    description: The ID of the entity the callback is about. Together with the `eventType`, this uniquely identifies the business entity.
+                  eventType:
+                    type: string
+                    description: The type of the event that triggered the callback.
+                  organizationId:
+                    type: string
+                    format: uuid
+                    description: The ID of the organization the callback is about.
+                  payload:
+                    type: string
+                    description: The payload of the callback as we originally sent it to you. The structure depends on the `eventType`. The JSON notation is escaped (with `\`) and encoded as a string.
+                  attemptCount:
+                    type: integer
+                    description: The amount of attempts to send the callback, includes retries.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /subscriptions:
+    get:
+      summary: Get Callback Subscriptions
+      description: Fetch information about currently subscribed callback events.
+      tags:
+      - Callbacks
+      operationId: get-callback-subscriptions
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - subscriptions
+                - callbacksEnabled
+                properties:
+                  subscriptions:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                      - id
+                      - eventType
+                      - callbackUrl
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        eventType:
+                          type: string
+                          description: event name (see individual callback subscription endpoints for details)
+                        callbackUrl:
+                          type: string
+                          description: callback url to which we send the callback in case an event is triggered
+                  callbacksEnabled:
+                    type: boolean
+                    description: Indicates whether callbacks are enabled for the partner
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /subscriptions/bulk-upsert:
+    post:
+      summary: Add Multiple Callback Subscriptions
+      description: 'Create multiple callback subscriptions in a single request.
+
+
+        This endpoint allows you to create callback subscriptions for multiple event types and callback URLs.
+
+        Callback subscriptions are identified by the combination of event type and callback URL. If a callback subscription
+
+        with the same event type and callback URL already exists, it will be included in the response but not created again.
+
+
+        **Semantics:**
+
+        - Multiple callback subscriptions per event type are now allowed, as long as they have different callback URLs
+
+        - Existing callback subscriptions with matching event type and callback URL are not changed, but included in the response
+
+        - Only the callback subscriptions specified in the request are affected; other existing callback subscriptions remain unchanged
+
+        - At most 42 callback subscriptions per event type are allowed'
+      tags:
+      - Callbacks
+      operationId: bulk-upsert-subscriptions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - subscriptions
+              properties:
+                subscriptions:
+                  type: array
+                  description: List of subscriptions to create or update
+                  items:
+                    type: object
+                    required:
+                    - eventType
+                    - callbackUrl
+                    properties:
+                      eventType:
+                        type: string
+                        description: The event type to subscribe to (see individual callback subscription endpoints for details)
+                      callbackUrl:
+                        type: string
+                        format: uri
+                        description: The callback URL to which we send the callback when an event is triggered. Must be a valid and reachable HTTPS URL.
+                        example: https://partner.example.com/send/callback/here
+      responses:
+        '200':
+          description: Ok. Returns the affected subscriptions (both newly created and existing ones that matched).
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - subscriptions
+                - callbacksEnabled
+                properties:
+                  subscriptions:
+                    type: array
+                    items:
+                      $ref: '#/paths/~1subscriptions/get/responses/200/content/application~1json/schema/properties/subscriptions/items'
+                  callbacksEnabled:
+                    type: boolean
+                    description: Indicates whether callbacks are enabled for the partner
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /subscriptions/callback-log:
+    get:
+      summary: Get Callback Log (Deprecated)
+      deprecated: true
+      description: '**Deprecated:** This endpoint is deprecated and will be removed in a future release. Use `GET /callbacks` instead.
+
+
+        Get a list of all callbacks we produced for you, whether we could send them to you or not. This log contains all callbacks Pliant produced, together with a status and further metadata to let you investigate problems etc.
+
+        You can add optional filters to narrow down the results. To get the payload of a specific callback, use the `GET /callbacks/{callbackId}` endpoint.'
+      tags:
+      - Callbacks
+      operationId: get-callback-log
+      parameters:
+      - name: organizationId
+        in: query
+        description: Filter by organization id.
+        schema:
+          type: string
+          format: uuid
+        required: false
+      - name: entityId
+        in: query
+        deprecated: true
+        description: Filter by single entity id.
+        schema:
+          type: string
+          format: uuid
+        required: false
+      - name: entityIds
+        in: query
+        description: Filter by (multiple) entity ids.
+        schema:
+          type: array
+          items:
+            type: string
+            format: uuid
+        required: false
+      - name: eventType
+        in: query
+        description: Filter by event type.
+        schema:
+          type: string
+        required: false
+      - name: status
+        in: query
+        description: Filter by status. The status of the callback. The callback starts as `UNSENT`, transitions to `IN_PROGRESS`, then to `SENT` or `FAILED`. If the callback is skipped (mostly due to manual interventions), it will be marked as `SKIPPED`. The status `TO_BE_SEND_IMMEDIATELY` is a short-lived, intermediate status similar to `UNSENT`.
+        schema:
+          type: string
+          enum:
+          - UNSENT
+          - IN_PROGRESS
+          - SENT
+          - FAILED
+          - SKIPPED
+          - TO_BE_SEND_IMMEDIATELY
+        required: false
+      - name: fromDate
+        in: query
+        description: The `from` date to filter by as zero-offset UTC time. The date boundary is inclusive. Meaning we compare with `>=`.
+        schema:
+          type: string
+          format: date-time
+          example: '2024-07-19T15:00:00.000000Z'
+        required: false
+      - name: toDate
+        in: query
+        description: The `to` date to filter by as zero-offset UTC time. The date boundary is inclusive. Meaning we compare with `<=`.
+        schema:
+          type: string
+          format: date-time
+          example: '2024-07-19T15:00:00.000000Z'
+        required: false
+      - name: byDateField
+        in: query
+        description: The date field to filter by if `fromDate` and `toDate` are present.
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - sentAt
+          default: createdAt
+        required: false
+      - name: limit
+        in: query
+        description: The maximum number of items to return per page. The default value if not provided is 100, the maximum allowed value is 1000.
+        schema:
+          type: integer
+      - name: page
+        in: query
+        description: The page number to return, starting with 0, this counts up to the total number of pages. The total number of pages is determined by the total number of records divided by the limit.
+        schema:
+          type: integer
+      - name: sortBy
+        in: query
+        description: The field to sort by.
+        schema:
+          type: string
+          enum:
+          - organizationId
+          - status
+          - eventType
+          - createdAt
+      - name: sortDirection
+        in: query
+        description: The direction to sort by.
+        schema:
+          type: string
+          enum:
+          - ASC
+          - DESC
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    description: Callback log entries, sorted and filtered according to the request parameters.
+                    items:
+                      $ref: '#/paths/~1callbacks/get/responses/200/content/application~1json/schema/properties/data/items'
+                  hasNextPage:
+                    type: boolean
+                    description: Indicates whether there is a next page available.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /subscriptions/callback-log/{callbackId}:
+    get:
+      summary: Get Callback Details (Deprecated)
+      deprecated: true
+      description: '**Deprecated:** This endpoint is deprecated and will be removed in a future release. Use `GET /callbacks/{callbackId}` instead.
+
+
+        Get details about a specific callback, like its payload. This endpoint is useful for debugging and investigating issues with callbacks.'
+      tags:
+      - Callbacks
+      operationId: get-callback-details
+      parameters:
+      - name: callbackId
+        in: path
+        description: The callback id for which to fetch details.
+        schema:
+          type: string
+          format: uuid
+        required: true
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                    description: The ID of the callback log entry.
+                  entityId:
+                    type: string
+                    format: uuid
+                    description: The ID of the entity the callback is about. Together with the `eventType`, this uniquely identifies the business entity.
+                  eventType:
+                    type: string
+                    description: The type of the event that triggered the callback.
+                  organizationId:
+                    type: string
+                    format: uuid
+                    description: The ID of the organization the callback is about.
+                  payload:
+                    type: string
+                    description: The payload of the callback as we originally sent it to you. The structure depends on the `eventType`. The JSON notation is escaped (with `\`) and encoded as a string.
+                  attemptCount:
+                    type: integer
+                    description: The amount of attempts to send the callback, includes retries.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /subscriptions/{id}:
+    delete:
+      summary: Delete Callback Subscription
+      description: 'Delete a callback subscription by ID.
+
+
+        This endpoint allows you to delete a specific callback subscription by its unique identifier.'
+      tags:
+      - Callbacks
+      operationId: delete-subscription
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: The unique identifier of the callback subscription to delete.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: No Content. The callback subscription was successfully deleted.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: This API uses oAuth2 with client credentials flow to [obtain the Bearer Token](/docs/authenticated-api-usage).
+      bearerFormat: JWT
+x-provenance:
+  method: searched
+  source: https://customer-api.getpliant.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://customer-api.getpliant.com/reference/activate-physical-card.md
+  - https://customer-api.getpliant.com/reference/assign-project-team.md
+  - https://customer-api.getpliant.com/reference/assign-to-team.md
+  - https://customer-api.getpliant.com/reference/bulk-upsert-subscriptions.md
+  - https://customer-api.getpliant.com/reference/card-pan-and-cvv-pci-vault.md
+  - https://customer-api.getpliant.com/reference/card-pan-tokenized-from-pci-proxy.md
+  - https://customer-api.getpliant.com/reference/claim-card-as-copilot.md
+  - https://customer-api.getpliant.com/reference/create-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-transfer.md
+  - https://customer-api.getpliant.com/reference/create-card-account.md
+  - https://customer-api.getpliant.com/reference/create-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-subscription.md
+  - https://customer-api.getpliant.com/reference/create-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/create-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/create-custom-field.md
+  - https://customer-api.getpliant.com/reference/create-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/create-project.md
+  - https://customer-api.getpliant.com/reference/create-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/create-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/create-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/create-team.md
+  - https://customer-api.getpliant.com/reference/create-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/deactivate-card-account.md
+  - https://customer-api.getpliant.com/reference/deactivate-cardholder.md
+  - https://customer-api.getpliant.com/reference/deactivate-team.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field.md
+  - https://customer-api.getpliant.com/reference/delete-project.md
+  - https://customer-api.getpliant.com/reference/delete-receipt.md
+  - https://customer-api.getpliant.com/reference/delete-subscription.md
+  - https://customer-api.getpliant.com/reference/delete-team.md
+  - https://customer-api.getpliant.com/reference/delete-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/generate-test-transactions-in-sandbox.md
+  - https://customer-api.getpliant.com/reference/get-account-entries.md
+  - https://customer-api.getpliant.com/reference/get-accounting-transactions-batch.md
+  - https://customer-api.getpliant.com/reference/get-available-cards.md
+  - https://customer-api.getpliant.com/reference/get-callback-details.md
+  - https://customer-api.getpliant.com/reference/get-callback-log.md
+  - https://customer-api.getpliant.com/reference/get-callback-subscriptions.md
+  - https://customer-api.getpliant.com/reference/get-callback.md
+  - https://customer-api.getpliant.com/reference/get-card-account-details.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts-available-currencies.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts.md
+  - https://customer-api.getpliant.com/reference/get-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/get-card-pin.md
+  - https://customer-api.getpliant.com/reference/get-cardholder-details.md
+  - https://customer-api.getpliant.com/reference/get-cards.md
+  - https://customer-api.getpliant.com/reference/get-custom-field-options.md
+  - https://customer-api.getpliant.com/reference/get-custom-fields.md
+  - https://customer-api.getpliant.com/reference/get-multiple-card-details.md
+  - https://customer-api.getpliant.com/reference/get-organization-details.md
+  - https://customer-api.getpliant.com/reference/get-otp-for-pci-widget.md
+  - https://customer-api.getpliant.com/reference/get-payments-detail.md
+  - https://customer-api.getpliant.com/reference/get-payments.md
+  - https://customer-api.getpliant.com/reference/get-projects.md
+  - https://customer-api.getpliant.com/reference/get-receipt-automatcher-status.md
+  - https://customer-api.getpliant.com/reference/get-receipt-detail.md
+  - https://customer-api.getpliant.com/reference/get-receipts.md
+  - https://customer-api.getpliant.com/reference/get-single-card-details.md
+  - https://customer-api.getpliant.com/reference/get-statement-csv.md
+  - https://customer-api.getpliant.com/reference/get-statement-detail.md
+  - https://customer-api.getpliant.com/reference/get-statementpdf.md
+  - https://customer-api.getpliant.com/reference/get-statements.md
+  - https://customer-api.getpliant.com/reference/get-teams.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail-batch.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail.md
+  - https://customer-api.getpliant.com/reference/get-transactions.md
+  - https://customer-api.getpliant.com/reference/invite-cardholders.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant-with-pci.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant.md
+  - https://customer-api.getpliant.com/reference/issue-card.md
+  - https://customer-api.getpliant.com/reference/list-cardholders.md
+  - https://customer-api.getpliant.com/reference/list-organizations.md
+  - https://customer-api.getpliant.com/reference/load-cards-batch.md
+  - https://customer-api.getpliant.com/reference/lock-card.md
+  - https://customer-api.getpliant.com/reference/metadata-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/receipt-as-merged-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-as-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-original.md
+  - https://customer-api.getpliant.com/reference/receipt-thumbnail.md
+  - https://customer-api.getpliant.com/reference/register-cardholders.md
+  - https://customer-api.getpliant.com/reference/remove-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cards-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/replace-card.md
+  - https://customer-api.getpliant.com/reference/resend-callbacks.md
+  - https://customer-api.getpliant.com/reference/search-callbacks.md
+  - https://customer-api.getpliant.com/reference/simulate-prefund-payment.md
+  - https://customer-api.getpliant.com/reference/simulate-transaction-status-transition.md
+  - https://customer-api.getpliant.com/reference/terminate-card.md
+  - https://customer-api.getpliant.com/reference/unassign-from-team.md
+  - https://customer-api.getpliant.com/reference/unassign-project-team.md
+  - https://customer-api.getpliant.com/reference/unlock-card.md
+  - https://customer-api.getpliant.com/reference/update-card-account.md
+  - https://customer-api.getpliant.com/reference/update-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/update-card-copilots.md
+  - https://customer-api.getpliant.com/reference/update-card-label.md
+  - https://customer-api.getpliant.com/reference/update-card-limit.md
+  - https://customer-api.getpliant.com/reference/update-card-validity-period.md
+  - https://customer-api.getpliant.com/reference/update-card.md
+  - https://customer-api.getpliant.com/reference/update-cardholders.md
+  - https://customer-api.getpliant.com/reference/update-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/update-custom-field.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-accounting-transaction.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-card.md
+  - https://customer-api.getpliant.com/reference/update-project.md
+  - https://customer-api.getpliant.com/reference/update-team.md
+  - https://customer-api.getpliant.com/reference/update-transaction-category.md
+  - https://customer-api.getpliant.com/reference/update-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status-batch.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status.md
+  - https://customer-api.getpliant.com/reference/update-transaction-receipt-upload.md
+  - https://customer-api.getpliant.com/reference/upload-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/upload-receipt.md
+  merge:
+    pages: 128
+    deduped: 452
+    conflicts_kept_first: 0

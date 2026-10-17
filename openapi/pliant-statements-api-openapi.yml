@@ -1,0 +1,705 @@
+openapi: 3.2.0
+info:
+  contact:
+    name: API Support
+    email: support@getpliant.com
+    url: https://www.getpliant.com
+  title: Pliant Customer Statements API
+  description: Pliant Customer API
+  version: 2.1.0
+  license:
+    name: MIT
+    url: https://opensource.org/license/MIT
+servers:
+- url: https://partner-api.getpliant.com/api
+  description: Pliant Production Server
+- url: https://sandbox.partner-api.getpliant.com/api
+  description: Pliant Sandbox Server
+- url: https://pci-api.getpliant.com
+  description: PCI Vault Production Server
+- url: https://pci-sandbox.partner-api.getpliant.com
+  description: PCI Vault Sandbox Server
+security:
+- bearerAuth: []
+tags:
+- name: Statements
+  description: This tag is for operations related to statements
+paths:
+  /statements:
+    get:
+      summary: List of Statements
+      description: Returns a list of metadata for every statement for the given organization. A statement groups all booked transactions and all other relevant payments on a monthly basis, unrelated to the payment frequency of the organization. Payments are part of a statement if the actualPaymentDate falls between the statementPeriodStart and statementPeriodEnd. Transactions are part of a statement if the bookingDate falls between the statementPeriodStart and statementPeriodEnd. You can use the `limit`, `page`, `sortBy` and `sortDirection` parameters to filter and sort the results. If you are looking for details about the payments according to the payment frequency of the organization, use the payments endpoints.
+      tags:
+      - Statements
+      operationId: get-statements
+      parameters:
+      - name: organizationId
+        in: query
+        description: The ID of the organization to get the statements for.
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - name: cardAccountId
+        in: query
+        description: The ID of the [card account](/docs/card-account) to get the statements for. Statements keep the card account id they were generated for. If a card account was superseded, filtering by the superseded id returns the statements of the periods before the switch and filtering by its successor (`supersededBy`) returns the ones after. Query both ids to get a complete list across the switch.
+        schema:
+          type: string
+          format: uuid
+      - name: isClosed
+        in: query
+        description: Filter by already closed statements?
+        schema:
+          type: boolean
+      - name: fromDate
+        in: query
+        description: The date from which to return statements, zero-offset UTC time. The date boundary is inclusive. Meaning we compare with `>=`.
+        schema:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          example: '2021-01-30T08:30:00Z'
+      - name: toDate
+        in: query
+        description: The date until which to return statements, zero-offset UTC time. The date boundary is inclusive. Meaning we compare with `<=`.
+        schema:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          example: '2021-01-30T08:30:00Z'
+      - name: byDateField
+        in: query
+        description: Desired date field to be filtered by if `fromDate` or `toDate` present.
+        schema:
+          type:
+          - string
+          - 'null'
+          enum:
+          - startDate
+          - endDate
+          - updatedAt
+          - createdAt
+          default: createdAt
+      - name: limit
+        in: query
+        description: The maximum number of items to return per page. The default value if not provided is 100, the maximum allowed value is 1000.
+        schema:
+          type: integer
+      - name: page
+        in: query
+        description: The page number to return, starting with 0, this counts up to the total number of pages. The total number of pages is determined by the total number of records divided by the limit.
+        schema:
+          type: integer
+      - name: sortBy
+        in: query
+        description: The field to sort by.
+        schema:
+          type: string
+          enum:
+          - organizationId
+          - createdAt
+      - name: sortDirection
+        in: query
+        description: The direction to sort by.
+        schema:
+          type: string
+          enum:
+          - ASC
+          - DESC
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        statementId:
+                          type: string
+                          format: uuid
+                          description: The ID of the statement.
+                        statementCreatedAt:
+                          type: string
+                          format: date-time
+                          description: The date when the statement was created.
+                        isClosed:
+                          type: boolean
+                          description: Whether the statement is closed already or not.
+                  hasNextPage:
+                    type: boolean
+                    description: Indicates whether there is a next page available.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /statements/csv:
+    get:
+      summary: Statement CSV
+      description: 'Generates a CSV file with the statement data asynchronously for the specified organization and card account and date period. The CSV file will be available for download shortly. You will receive a callback of type `STATEMENT_CSV_DOWNLOAD_READY` once the exported CSV file is ready. **Do not forget to subscribe to the callback upfront! Otherwise this endpoint returns an error.** The endpoint can only be used with an active callback subscription for the `STATEMENT_CSV_DOWNLOAD_READY` event type. Hint: The time it takes to generate the file may vary according to system load.'
+      tags:
+      - Statements
+      operationId: get-statement-csv
+      parameters:
+      - name: organizationId
+        in: query
+        required: true
+        description: The organization ID for which the statement is requested.
+        schema:
+          type: string
+          format: uuid
+      - name: cardAccountId
+        in: query
+        description: Optionally, the card account ID for which the statement is requested. If not provided, the default card account will be used. A superseded card account still serves the statements of the periods before the switch. For periods after the switch, request the statement for its successor (`supersededBy`).
+        schema:
+          type: string
+          format: uuid
+      - name: fromBookingDate
+        in: query
+        required: true
+        description: The start date of the statement period, has to be in the past and before the `toBookingDate`. Format is `YYYY-MM-DD`. This is normally the first day of the month.
+        schema:
+          type: string
+          format: date
+      - name: toBookingDate
+        in: query
+        required: true
+        description: The end date of the statement period, has to be in the past. Format is `YYYY-MM-DD`. This is normally the last day of the month.
+        schema:
+          type: string
+          format: date
+      - name: language
+        in: query
+        description: The language of the headers in the CSV file. If not provided, English (`en`) will be used.
+        schema:
+          type: string
+          enum:
+          - en
+          - de
+        example: en
+      responses:
+        '202':
+          description: Accepted. The CSV file is being generated and will be available for download shortly. You will receive a [callback](/reference/create-statement-subscription) of type `STATEMENT_CSV_DOWNLOAD_READY` once the exported CSV file is ready. Do not forget to subscribe to it!
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statementFileExportId:
+                    type: string
+                    format: uuid
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /statements/subscription:
+    post:
+      summary: 'Callback: Add/Update'
+      description: Subscribe to callbacks for this entity or change an existing callback.
+      tags:
+      - Statements
+      operationId: create-statement-subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                callbackUrl:
+                  type: string
+                  format: uri
+                  example: https://myserver.com/send/callback/here
+                  description: The URL to send the callback to. Must be a valid and reachable URL. We do some basic validation to ensure the URL is syntactically correct and reachable for Pliant. Only HTTPS URLs are supported.
+                eventTypes:
+                  type: array
+                  description: The event types to subscribe to.
+                  items:
+                    type: string
+                    enum:
+                    - STATEMENT_GENERATED
+                    - STATEMENT_UPDATED
+                    - STATEMENT_CSV_DOWNLOAD_READY
+              required:
+              - callbackUrl
+              - eventTypes
+      responses:
+        '201':
+          description: Created
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+      callbacks:
+        statementUpdated:
+          '{$request.body#/callbackUrl}':
+            post:
+              parameters:
+              - in: header
+                name: X-Organization-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the organization this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Partner-Organization-Id
+                schema:
+                  type: string
+                  description: 'Filled, if the value `partnerOrganizationId` is [set](/reference/update-organization) by the partner on the organization itself. Referencing the organization identifier of the partner. Example value: `abc123`.'
+              - in: header
+                name: X-Payment-Program-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the payment program this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Callback-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'A unique identifier for this callback. Can be used to deduplicate callbacks to achieve idempotent behavior. See [guides](/docs/callbacks) for more details. Example value: `12a03093-eaad-4ae5-9d8d-42e7f6f8b7c6`.'
+              - in: header
+                name: X-Callback-Created-At
+                schema:
+                  type: string
+                  format: date-time
+                  description: 'The date and time when the callback was created. Can be used to reorder callbacks. See [guides](/docs/callbacks) for more details. Example value: `2024-03-15T15:55:58.623375258Z`.'
+              description: A statement has been updated. Will be sent for `eventTypes` `STATEMENT_UPDATED` and `STATEMENT_GENERATED`. Also sent when a statement closes (`isClosed` transitions from `false` to `true`).
+              requestBody:
+                content:
+                  application/json:
+                    schema:
+                      allOf:
+                      - $ref: '#/paths/~1cards~1subscription/post/callbacks/cardUpdated/{$request.body#~1callbackUrl}/post/requestBody/content/application~1json/schema/allOf/0'
+                      - type: object
+                        properties:
+                          organizationId:
+                            type: string
+                            format: uuid
+                            description: The organization ID for which the statement is generated.
+                          statementId:
+                            type: string
+                            format: uuid
+                            description: The statement ID.
+                          cardAccountId:
+                            type: string
+                            format: uuid
+                            description: The unique identifier of the [card account](/docs/card-account).
+                          statementCreatedAt:
+                            type: string
+                            format: date-time
+                            description: The date and time when the statement was created.
+                          isClosed:
+                            type: boolean
+                            description: Indicates if the statement is closed. Closing a statement (transitioning `isClosed` from `false` to `true`) also triggers this callback.
+              responses:
+                '200':
+                  description: We expect the partner to return a HTTP 200 status code if the callback was successfully received. On 4xx and 5xx status codes, we will [retry](/docs/callbacks#retries) the callback.
+        statementCsvDownloadReady:
+          '{$request.body#/callbackUrl}':
+            post:
+              parameters:
+              - in: header
+                name: X-Organization-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the organization this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Partner-Organization-Id
+                schema:
+                  type: string
+                  description: 'Filled, if the value `partnerOrganizationId` is [set](/reference/update-organization) by the partner on the organization itself. Referencing the organization identifier of the partner. Example value: `abc123`.'
+              - in: header
+                name: X-Payment-Program-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the payment program this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Callback-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'A unique identifier for this callback. Can be used to deduplicate callbacks to achieve idempotent behavior. See [guides](/docs/callbacks) for more details. Example value: `12a03093-eaad-4ae5-9d8d-42e7f6f8b7c6`.'
+              - in: header
+                name: X-Callback-Created-At
+                schema:
+                  type: string
+                  format: date-time
+                  description: 'The date and time when the callback was created. Can be used to reorder callbacks. See [guides](/docs/callbacks) for more details. Example value: `2024-03-15T15:55:58.623375258Z`.'
+              description: A statement has been updated. Will be send for `eventTypes` `STATEMENT_CSV_DOWNLOAD_READY`.
+              requestBody:
+                content:
+                  application/json:
+                    schema:
+                      allOf:
+                      - $ref: '#/paths/~1cards~1subscription/post/callbacks/cardUpdated/{$request.body#~1callbackUrl}/post/requestBody/content/application~1json/schema/allOf/0'
+                      - type: object
+                        properties:
+                          organizationId:
+                            type: string
+                            format: uuid
+                            description: The organization ID for which the statement CSV file is generated.
+                          cardAccountId:
+                            type: string
+                            format: uuid
+                            description: The card account for which the statement CSV file is generated.
+                          statementFileExportId:
+                            type: string
+                            format: uuid
+                            description: The statement file export ID as it was provided by the endpoint to [start file generation](/reference/get-statement-csv).
+                          statementFileUrl:
+                            type: string
+                            format: uri
+                            description: The temporary URL to download the statement CSV file via a `GET` request. The file will be streamed to you. This URL is valid for at least 1 week. After that, the file might not be available anymore. The pattern of this URL may change at any time, so do not rely on the structure of the URL. Every time you receive the callback, just use the provided URL in the callback to download the file.
+              responses:
+                '200':
+                  description: We expect the partner to return a HTTP 200 status code if the callback was successfully received. On 4xx and 5xx status codes, we will [retry](/docs/callbacks#retries) the callback.
+    delete:
+      summary: 'Callback: Remove'
+      description: Remove a callback subscription for this entity.
+      tags:
+      - Statements
+      operationId: remove-statement-subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                eventTypes:
+                  type: array
+                  description: The event types to unsubscribe from.
+                  items:
+                    type: string
+                    enum:
+                    - STATEMENT_GENERATED
+                    - STATEMENT_UPDATED
+                    - STATEMENT_CSV_DOWNLOAD_READY
+              required:
+              - eventTypes
+      responses:
+        '200':
+          description: Ok
+  /statements/{statementId}:
+    get:
+      summary: Statement Details
+      description: Returns the details of a single statement.
+      tags:
+      - Statements
+      operationId: get-statement-detail
+      parameters:
+      - name: statementId
+        in: path
+        required: true
+        description: The unique identifier of the statement.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statementId:
+                    type: string
+                    format: uuid
+                  organizationId:
+                    type: string
+                    format: uuid
+                  statementCreatedAt:
+                    type: string
+                    format: date-time
+                  isClosed:
+                    type: boolean
+                  statementPeriodStart:
+                    type: string
+                    format: date-time
+                  statementPeriodEnd:
+                    type: string
+                    format: date-time
+                  openingBalance:
+                    type: object
+                    properties:
+                      value:
+                        type: number
+                        description: The value of the monetary amount, converted to minor units of the currency. For instance 1.00 EUR is 100 cents, thus the value here is `100`. See our [guides](/docs/monetary-values) for more details about how to handle monetary amounts.
+                      currency:
+                        type: string
+                        description: The currency of the monetary amount in ISO 4217 format, for example `EUR` for Euro or `USD` for US Dollar.
+                  closingBalance:
+                    type: object
+                    properties:
+                      value:
+                        type: number
+                        description: The value of the monetary amount, converted to minor units of the currency. For instance 1.00 EUR is 100 cents, thus the value here is `100`. See our [guides](/docs/monetary-values) for more details about how to handle monetary amounts.
+                      currency:
+                        type: string
+                        description: The currency of the monetary amount in ISO 4217 format, for example `EUR` for Euro or `USD` for US Dollar.
+                  totalTransactionAmount:
+                    type: object
+                    properties:
+                      value:
+                        type: number
+                        description: The value of the monetary amount, converted to minor units of the currency. For instance 1.00 EUR is 100 cents, thus the value here is `100`. See our [guides](/docs/monetary-values) for more details about how to handle monetary amounts.
+                      currency:
+                        type: string
+                        description: The currency of the monetary amount in ISO 4217 format, for example `EUR` for Euro or `USD` for US Dollar.
+                  totalPaymentAmount:
+                    type: object
+                    properties:
+                      value:
+                        type: number
+                        description: The value of the monetary amount, converted to minor units of the currency. For instance 1.00 EUR is 100 cents, thus the value here is `100`. See our [guides](/docs/monetary-values) for more details about how to handle monetary amounts.
+                      currency:
+                        type: string
+                        description: The currency of the monetary amount in ISO 4217 format, for example `EUR` for Euro or `USD` for US Dollar.
+                  cardAccountId:
+                    type: string
+                    format: uuid
+                    description: The unique identifier of the [card account](/docs/card-account).
+                  relatedAccountEntries:
+                    type: array
+                    description: The related account entries of this statement, i.e. all account entries that are part of this statement. The list is only final once the statement was closed (compare `isClosed`).
+                    items:
+                      type: object
+                      properties:
+                        accountEntryId:
+                          type: string
+                          format: uuid
+                          description: The unique identifier of the account entry itself. With this identifier you can retrieve the account entry itself via the [account entry endpoint](/reference/get-account-entries).
+                        type:
+                          type: string
+                          description: The type of the account entry.
+                          enum:
+                          - TRANSACTION
+                          - BILL_PAYMENT
+                          - OTHER
+                        transactionId:
+                          type: string
+                          format: uuid
+                          description: The unique identifier of the transaction, if available (see `type`).
+                        paymentId:
+                          type: string
+                          format: uuid
+                          description: The unique identifier of the payment, if available (see `type`).
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /statements/{statementId}/pdf:
+    get:
+      summary: Statement PDF
+      description: Returns a PDF file of the statement specified by the parameter `statementId`, containing all transactions and payments for the given statement.
+      tags:
+      - Statements
+      operationId: get-statementPDF
+      parameters:
+      - name: statementId
+        in: path
+        required: true
+        description: The unique identifier of the statement.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Original statement file in PDF format
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: base64
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: This API uses oAuth2 with client credentials flow to [obtain the Bearer Token](/docs/authenticated-api-usage).
+      bearerFormat: JWT
+x-provenance:
+  method: searched
+  source: https://customer-api.getpliant.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://customer-api.getpliant.com/reference/activate-physical-card.md
+  - https://customer-api.getpliant.com/reference/assign-project-team.md
+  - https://customer-api.getpliant.com/reference/assign-to-team.md
+  - https://customer-api.getpliant.com/reference/bulk-upsert-subscriptions.md
+  - https://customer-api.getpliant.com/reference/card-pan-and-cvv-pci-vault.md
+  - https://customer-api.getpliant.com/reference/card-pan-tokenized-from-pci-proxy.md
+  - https://customer-api.getpliant.com/reference/claim-card-as-copilot.md
+  - https://customer-api.getpliant.com/reference/create-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-transfer.md
+  - https://customer-api.getpliant.com/reference/create-card-account.md
+  - https://customer-api.getpliant.com/reference/create-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-subscription.md
+  - https://customer-api.getpliant.com/reference/create-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/create-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/create-custom-field.md
+  - https://customer-api.getpliant.com/reference/create-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/create-project.md
+  - https://customer-api.getpliant.com/reference/create-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/create-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/create-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/create-team.md
+  - https://customer-api.getpliant.com/reference/create-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/deactivate-card-account.md
+  - https://customer-api.getpliant.com/reference/deactivate-cardholder.md
+  - https://customer-api.getpliant.com/reference/deactivate-team.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field.md
+  - https://customer-api.getpliant.com/reference/delete-project.md
+  - https://customer-api.getpliant.com/reference/delete-receipt.md
+  - https://customer-api.getpliant.com/reference/delete-subscription.md
+  - https://customer-api.getpliant.com/reference/delete-team.md
+  - https://customer-api.getpliant.com/reference/delete-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/generate-test-transactions-in-sandbox.md
+  - https://customer-api.getpliant.com/reference/get-account-entries.md
+  - https://customer-api.getpliant.com/reference/get-accounting-transactions-batch.md
+  - https://customer-api.getpliant.com/reference/get-available-cards.md
+  - https://customer-api.getpliant.com/reference/get-callback-details.md
+  - https://customer-api.getpliant.com/reference/get-callback-log.md
+  - https://customer-api.getpliant.com/reference/get-callback-subscriptions.md
+  - https://customer-api.getpliant.com/reference/get-callback.md
+  - https://customer-api.getpliant.com/reference/get-card-account-details.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts-available-currencies.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts.md
+  - https://customer-api.getpliant.com/reference/get-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/get-card-pin.md
+  - https://customer-api.getpliant.com/reference/get-cardholder-details.md
+  - https://customer-api.getpliant.com/reference/get-cards.md
+  - https://customer-api.getpliant.com/reference/get-custom-field-options.md
+  - https://customer-api.getpliant.com/reference/get-custom-fields.md
+  - https://customer-api.getpliant.com/reference/get-multiple-card-details.md
+  - https://customer-api.getpliant.com/reference/get-organization-details.md
+  - https://customer-api.getpliant.com/reference/get-otp-for-pci-widget.md
+  - https://customer-api.getpliant.com/reference/get-payments-detail.md
+  - https://customer-api.getpliant.com/reference/get-payments.md
+  - https://customer-api.getpliant.com/reference/get-projects.md
+  - https://customer-api.getpliant.com/reference/get-receipt-automatcher-status.md
+  - https://customer-api.getpliant.com/reference/get-receipt-detail.md
+  - https://customer-api.getpliant.com/reference/get-receipts.md
+  - https://customer-api.getpliant.com/reference/get-single-card-details.md
+  - https://customer-api.getpliant.com/reference/get-statement-csv.md
+  - https://customer-api.getpliant.com/reference/get-statement-detail.md
+  - https://customer-api.getpliant.com/reference/get-statementpdf.md
+  - https://customer-api.getpliant.com/reference/get-statements.md
+  - https://customer-api.getpliant.com/reference/get-teams.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail-batch.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail.md
+  - https://customer-api.getpliant.com/reference/get-transactions.md
+  - https://customer-api.getpliant.com/reference/invite-cardholders.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant-with-pci.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant.md
+  - https://customer-api.getpliant.com/reference/issue-card.md
+  - https://customer-api.getpliant.com/reference/list-cardholders.md
+  - https://customer-api.getpliant.com/reference/list-organizations.md
+  - https://customer-api.getpliant.com/reference/load-cards-batch.md
+  - https://customer-api.getpliant.com/reference/lock-card.md
+  - https://customer-api.getpliant.com/reference/metadata-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/receipt-as-merged-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-as-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-original.md
+  - https://customer-api.getpliant.com/reference/receipt-thumbnail.md
+  - https://customer-api.getpliant.com/reference/register-cardholders.md
+  - https://customer-api.getpliant.com/reference/remove-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cards-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/replace-card.md
+  - https://customer-api.getpliant.com/reference/resend-callbacks.md
+  - https://customer-api.getpliant.com/reference/search-callbacks.md
+  - https://customer-api.getpliant.com/reference/simulate-prefund-payment.md
+  - https://customer-api.getpliant.com/reference/simulate-transaction-status-transition.md
+  - https://customer-api.getpliant.com/reference/terminate-card.md
+  - https://customer-api.getpliant.com/reference/unassign-from-team.md
+  - https://customer-api.getpliant.com/reference/unassign-project-team.md
+  - https://customer-api.getpliant.com/reference/unlock-card.md
+  - https://customer-api.getpliant.com/reference/update-card-account.md
+  - https://customer-api.getpliant.com/reference/update-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/update-card-copilots.md
+  - https://customer-api.getpliant.com/reference/update-card-label.md
+  - https://customer-api.getpliant.com/reference/update-card-limit.md
+  - https://customer-api.getpliant.com/reference/update-card-validity-period.md
+  - https://customer-api.getpliant.com/reference/update-card.md
+  - https://customer-api.getpliant.com/reference/update-cardholders.md
+  - https://customer-api.getpliant.com/reference/update-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/update-custom-field.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-accounting-transaction.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-card.md
+  - https://customer-api.getpliant.com/reference/update-project.md
+  - https://customer-api.getpliant.com/reference/update-team.md
+  - https://customer-api.getpliant.com/reference/update-transaction-category.md
+  - https://customer-api.getpliant.com/reference/update-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status-batch.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status.md
+  - https://customer-api.getpliant.com/reference/update-transaction-receipt-upload.md
+  - https://customer-api.getpliant.com/reference/upload-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/upload-receipt.md
+  merge:
+    pages: 128
+    deduped: 452
+    conflicts_kept_first: 0

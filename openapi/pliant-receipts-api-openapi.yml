@@ -1,0 +1,688 @@
+openapi: 3.2.0
+info:
+  contact:
+    name: API Support
+    email: support@getpliant.com
+    url: https://www.getpliant.com
+  title: Pliant Customer Receipts API
+  description: Pliant Customer API
+  version: 2.1.0
+  license:
+    name: MIT
+    url: https://opensource.org/license/MIT
+servers:
+- url: https://partner-api.getpliant.com/api
+  description: Pliant Production Server
+- url: https://sandbox.partner-api.getpliant.com/api
+  description: Pliant Sandbox Server
+- url: https://pci-api.getpliant.com
+  description: PCI Vault Production Server
+- url: https://pci-sandbox.partner-api.getpliant.com
+  description: PCI Vault Sandbox Server
+security:
+- bearerAuth: []
+tags:
+- name: Receipts
+  description: This tag is for operations related to receipts
+paths:
+  /receipts:
+    get:
+      summary: List of Receipts
+      description: Returns list of metadata for every receipt associated with the transaction. You can use the `limit`, `page`, `sortBy` and `sortDirection` parameters to filter and sort the results.
+      tags:
+      - Receipts
+      operationId: get-receipts
+      parameters:
+      - name: transactionId
+        in: query
+        required: true
+        description: The unique identifier of the transaction.
+        schema:
+          type: string
+          format: uuid
+      - name: limit
+        in: query
+        description: The maximum number of items to return per page. The default value if not provided is 100, the maximum allowed value is 1000.
+        schema:
+          type: integer
+      - name: page
+        in: query
+        description: The page number to return, starting with 0, this counts up to the total number of pages. The total number of pages is determined by the total number of records divided by the limit.
+        schema:
+          type: integer
+      - name: sortBy
+        in: query
+        description: The field to sort by.
+        schema:
+          type: string
+          enum:
+          - transactionId
+          - createdAt
+      - name: sortDirection
+        in: query
+        description: The direction to sort by.
+        schema:
+          type: string
+          enum:
+          - ASC
+          - DESC
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        receiptId:
+                          type: string
+                          format: uuid
+                          description: The unique identifier of the receipt.
+                        createdAt:
+                          type: string
+                          format: date-time
+                          description: The date and time when the receipt was created.
+                  hasNextPage:
+                    type: boolean
+                    description: Indicates whether there is a next page available.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+    post:
+      summary: Upload Receipt
+      description: Upload receipt to an existing transaction.
+      tags:
+      - Receipts
+      operationId: upload-receipt
+      parameters:
+      - name: transactionId
+        in: query
+        required: true
+        description: The transaction to which the receipt should be uploaded.
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+              - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The receipt which should be uploaded to the transaction.
+            encoding:
+              receiptFile:
+                contentType: image/png, image/jpeg, application/pdf
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  receiptId:
+                    type: string
+                    format: uuid
+        '400':
+          description: Bad request - Receipt uploads are disabled for transactions with status `REVERSED` and `DECLINED`, or if type is `STATUS_INQUIRY`
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - errorCode
+                - exceptionId
+                - message
+                properties:
+                  errorCode:
+                    type: string
+                    description: RECEIPT_UPLOAD_NOT_ENABLED
+                  exceptionId:
+                    type: string
+                    format: uuid
+                  message:
+                    type: string
+                    description: Upload failed. `receiptUploadEnabled` set to false for the specified transaction
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '418':
+          description: Upload failed because transaction does not allow adding a receipt (`receiptUploadEnabled` is set to `false`)
+          content:
+            application/json:
+              schema:
+                type: string
+                description: Upload failed because transaction does not allow adding a receipt (`receiptUploadEnabled` is set to `false`)
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /receipts/subscription:
+    post:
+      summary: 'Callback: Add/Update'
+      description: Subscribe to callbacks for this entity or change an existing callback.
+      tags:
+      - Receipts
+      operationId: create-receipt-subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                callbackUrl:
+                  type: string
+                  format: uri
+                  example: https://myserver.com/send/callback/here
+                  description: The URL to send the callback to. Must be a valid and reachable URL. We do some basic validation to ensure the URL is syntactically correct and reachable for Pliant. Only HTTPS URLs are supported.
+                eventTypes:
+                  type: array
+                  description: The event types to subscribe to.
+                  items:
+                    type: string
+                    enum:
+                    - RECEIPT_UPLOADED
+                    - RECEIPT_DELETED
+              required:
+              - callbackUrl
+              - eventTypes
+      responses:
+        '201':
+          description: Created
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+      callbacks:
+        receiptUpdated:
+          '{$request.body#/callbackUrl}':
+            post:
+              parameters:
+              - in: header
+                name: X-Organization-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the organization this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Partner-Organization-Id
+                schema:
+                  type: string
+                  description: 'Filled, if the value `partnerOrganizationId` is [set](/reference/update-organization) by the partner on the organization itself. Referencing the organization identifier of the partner. Example value: `abc123`.'
+              - in: header
+                name: X-Payment-Program-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the payment program this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Callback-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'A unique identifier for this callback. Can be used to deduplicate callbacks to achieve idempotent behavior. See [guides](/docs/callbacks) for more details. Example value: `12a03093-eaad-4ae5-9d8d-42e7f6f8b7c6`.'
+              - in: header
+                name: X-Callback-Created-At
+                schema:
+                  type: string
+                  format: date-time
+                  description: 'The date and time when the callback was created. Can be used to reorder callbacks. See [guides](/docs/callbacks) for more details. Example value: `2024-03-15T15:55:58.623375258Z`.'
+              requestBody:
+                content:
+                  application/json:
+                    schema:
+                      allOf:
+                      - $ref: '#/paths/~1cards~1subscription/post/callbacks/cardUpdated/{$request.body#~1callbackUrl}/post/requestBody/content/application~1json/schema/allOf/0'
+                      - type: object
+                        properties:
+                          receiptId:
+                            type: string
+                            format: uuid
+                            description: The unique identifier of the receipt.
+                          organizationId:
+                            type: string
+                            format: uuid
+                            description: The unique identifier of the organization.
+                          createdAt:
+                            type: string
+                            format: date-time
+                            description: The date and time when the receipt was created.
+                          transactionId:
+                            type: string
+                            format: uuid
+                            description: The unique identifier of the transaction associated with the receipt.
+              responses:
+                '200':
+                  description: We expect the partner to return a HTTP 200 status code if the callback was successfully received. On 4xx and 5xx status codes, we will [retry](/docs/callbacks#retries) the callback.
+    delete:
+      summary: 'Callback: Remove'
+      description: Remove a callback subscription for this entity.
+      tags:
+      - Receipts
+      operationId: remove-receipt-subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                eventTypes:
+                  type: array
+                  description: The event types to unsubscribe from.
+                  items:
+                    type: string
+                    enum:
+                    - RECEIPT_UPLOADED
+                    - RECEIPT_DELETED
+              required:
+              - eventTypes
+      responses:
+        '200':
+          description: Ok
+  /receipts/{receiptId}:
+    get:
+      summary: Receipt Details
+      description: Returns the detailed metadata for the receipt specified by the given `receiptId`.
+      tags:
+      - Receipts
+      operationId: get-receipt-detail
+      parameters:
+      - name: receiptId
+        in: path
+        required: true
+        description: The unique identifier of the receipt to fetch details for.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  receiptId:
+                    type: string
+                    format: uuid
+                    description: The unique identifier of the receipt.
+                  transactionId:
+                    type: string
+                    format: uuid
+                    description: The unique identifier of the transaction associated with the receipt.
+                  createdAt:
+                    type: string
+                    format: date-time
+                    description: The date and time when the receipt was created.
+                  filename:
+                    type: string
+                    description: The name of the receipt file.
+                  mimeType:
+                    type: string
+                    description: The MIME type of the receipt file.
+                    enum:
+                    - PNG
+                    - JPG
+                    - PDF
+                  receiptNumber:
+                    type: string
+                    description: The receipt number of the receipt, if available. If not automatically extracted, this value can be provided by any Pliant user and will override the auto-extracted value.
+                  receiptDate:
+                    type: string
+                    format: date
+                    description: The receipt date of the receipt, if available. If not automatically extracted, this value can be provided by any Pliant user and will override the auto-extracted value.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+    delete:
+      summary: Delete Receipt
+      description: Delete the receipt specified by path parameter receiptId
+      tags:
+      - Receipts
+      operationId: delete-receipt
+      parameters:
+      - name: receiptId
+        in: path
+        required: true
+        description: The unique identifier of the receipt.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: Ok
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '409':
+          $ref: '#/paths/~1card-accounts/post/responses/409'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /receipts/{receiptId}/original:
+    get:
+      summary: Receipt Original
+      description: Returns a original file of the receipt specified by path parameter `receiptId`.
+      tags:
+      - Receipts
+      operationId: receipt-original
+      parameters:
+      - name: receiptId
+        in: path
+        required: true
+        description: The unique identifier of the receipt.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Original receipt file in selected format
+          content:
+            image/png:
+              schema:
+                type: string
+                format: base64
+            image/jpg:
+              schema:
+                type: string
+                format: base64
+            application/pdf:
+              schema:
+                type: string
+                format: base64
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /receipts/{receiptId}/pdf:
+    get:
+      summary: Receipt as PDF
+      description: Returns a PDF file of the receipt specified by path parameter `receiptId`. The PDF is generated on the fly and may take a few seconds to be generated.
+      tags:
+      - Receipts
+      operationId: receipt-as-pdf
+      parameters:
+      - name: receiptId
+        in: path
+        required: true
+        description: The unique identifier of the receipt.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: PDF receipt file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: base64
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /receipts/{receiptId}/thumbnail:
+    get:
+      summary: Receipt Thumbnail
+      description: Returns a thumbnail file of the receipt specified by path parameter `receiptId`.
+      tags:
+      - Receipts
+      operationId: receipt-thumbnail
+      parameters:
+      - name: receiptId
+        in: path
+        required: true
+        description: The unique identifier of the receipt.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Ok
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: byte
+                description: Base64-encoded contents of the receipt thumbnail
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /transactions/{transactionId}/receipts:
+    get:
+      summary: Receipts as Merged PDF
+      description: Returns a single, merged PDF of all receipts of the provided transaction. The returned PDF contains all receipts attached to the transaction, concatenated into one single PDF file. The PDF is generated on the fly and may take a few seconds to be generated.
+      tags:
+      - Receipts
+      operationId: receipt-as-merged-pdf
+      parameters:
+      - name: transactionId
+        in: path
+        required: true
+        description: The unique identifier of the transaction.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: One PDF file with all receipts attached to the transaction merged into this single PDF file.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: base64
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: This API uses oAuth2 with client credentials flow to [obtain the Bearer Token](/docs/authenticated-api-usage).
+      bearerFormat: JWT
+x-provenance:
+  method: searched
+  source: https://customer-api.getpliant.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://customer-api.getpliant.com/reference/activate-physical-card.md
+  - https://customer-api.getpliant.com/reference/assign-project-team.md
+  - https://customer-api.getpliant.com/reference/assign-to-team.md
+  - https://customer-api.getpliant.com/reference/bulk-upsert-subscriptions.md
+  - https://customer-api.getpliant.com/reference/card-pan-and-cvv-pci-vault.md
+  - https://customer-api.getpliant.com/reference/card-pan-tokenized-from-pci-proxy.md
+  - https://customer-api.getpliant.com/reference/claim-card-as-copilot.md
+  - https://customer-api.getpliant.com/reference/create-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-transfer.md
+  - https://customer-api.getpliant.com/reference/create-card-account.md
+  - https://customer-api.getpliant.com/reference/create-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-subscription.md
+  - https://customer-api.getpliant.com/reference/create-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/create-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/create-custom-field.md
+  - https://customer-api.getpliant.com/reference/create-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/create-project.md
+  - https://customer-api.getpliant.com/reference/create-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/create-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/create-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/create-team.md
+  - https://customer-api.getpliant.com/reference/create-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/deactivate-card-account.md
+  - https://customer-api.getpliant.com/reference/deactivate-cardholder.md
+  - https://customer-api.getpliant.com/reference/deactivate-team.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field.md
+  - https://customer-api.getpliant.com/reference/delete-project.md
+  - https://customer-api.getpliant.com/reference/delete-receipt.md
+  - https://customer-api.getpliant.com/reference/delete-subscription.md
+  - https://customer-api.getpliant.com/reference/delete-team.md
+  - https://customer-api.getpliant.com/reference/delete-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/generate-test-transactions-in-sandbox.md
+  - https://customer-api.getpliant.com/reference/get-account-entries.md
+  - https://customer-api.getpliant.com/reference/get-accounting-transactions-batch.md
+  - https://customer-api.getpliant.com/reference/get-available-cards.md
+  - https://customer-api.getpliant.com/reference/get-callback-details.md
+  - https://customer-api.getpliant.com/reference/get-callback-log.md
+  - https://customer-api.getpliant.com/reference/get-callback-subscriptions.md
+  - https://customer-api.getpliant.com/reference/get-callback.md
+  - https://customer-api.getpliant.com/reference/get-card-account-details.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts-available-currencies.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts.md
+  - https://customer-api.getpliant.com/reference/get-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/get-card-pin.md
+  - https://customer-api.getpliant.com/reference/get-cardholder-details.md
+  - https://customer-api.getpliant.com/reference/get-cards.md
+  - https://customer-api.getpliant.com/reference/get-custom-field-options.md
+  - https://customer-api.getpliant.com/reference/get-custom-fields.md
+  - https://customer-api.getpliant.com/reference/get-multiple-card-details.md
+  - https://customer-api.getpliant.com/reference/get-organization-details.md
+  - https://customer-api.getpliant.com/reference/get-otp-for-pci-widget.md
+  - https://customer-api.getpliant.com/reference/get-payments-detail.md
+  - https://customer-api.getpliant.com/reference/get-payments.md
+  - https://customer-api.getpliant.com/reference/get-projects.md
+  - https://customer-api.getpliant.com/reference/get-receipt-automatcher-status.md
+  - https://customer-api.getpliant.com/reference/get-receipt-detail.md
+  - https://customer-api.getpliant.com/reference/get-receipts.md
+  - https://customer-api.getpliant.com/reference/get-single-card-details.md
+  - https://customer-api.getpliant.com/reference/get-statement-csv.md
+  - https://customer-api.getpliant.com/reference/get-statement-detail.md
+  - https://customer-api.getpliant.com/reference/get-statementpdf.md
+  - https://customer-api.getpliant.com/reference/get-statements.md
+  - https://customer-api.getpliant.com/reference/get-teams.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail-batch.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail.md
+  - https://customer-api.getpliant.com/reference/get-transactions.md
+  - https://customer-api.getpliant.com/reference/invite-cardholders.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant-with-pci.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant.md
+  - https://customer-api.getpliant.com/reference/issue-card.md
+  - https://customer-api.getpliant.com/reference/list-cardholders.md
+  - https://customer-api.getpliant.com/reference/list-organizations.md
+  - https://customer-api.getpliant.com/reference/load-cards-batch.md
+  - https://customer-api.getpliant.com/reference/lock-card.md
+  - https://customer-api.getpliant.com/reference/metadata-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/receipt-as-merged-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-as-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-original.md
+  - https://customer-api.getpliant.com/reference/receipt-thumbnail.md
+  - https://customer-api.getpliant.com/reference/register-cardholders.md
+  - https://customer-api.getpliant.com/reference/remove-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cards-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/replace-card.md
+  - https://customer-api.getpliant.com/reference/resend-callbacks.md
+  - https://customer-api.getpliant.com/reference/search-callbacks.md
+  - https://customer-api.getpliant.com/reference/simulate-prefund-payment.md
+  - https://customer-api.getpliant.com/reference/simulate-transaction-status-transition.md
+  - https://customer-api.getpliant.com/reference/terminate-card.md
+  - https://customer-api.getpliant.com/reference/unassign-from-team.md
+  - https://customer-api.getpliant.com/reference/unassign-project-team.md
+  - https://customer-api.getpliant.com/reference/unlock-card.md
+  - https://customer-api.getpliant.com/reference/update-card-account.md
+  - https://customer-api.getpliant.com/reference/update-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/update-card-copilots.md
+  - https://customer-api.getpliant.com/reference/update-card-label.md
+  - https://customer-api.getpliant.com/reference/update-card-limit.md
+  - https://customer-api.getpliant.com/reference/update-card-validity-period.md
+  - https://customer-api.getpliant.com/reference/update-card.md
+  - https://customer-api.getpliant.com/reference/update-cardholders.md
+  - https://customer-api.getpliant.com/reference/update-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/update-custom-field.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-accounting-transaction.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-card.md
+  - https://customer-api.getpliant.com/reference/update-project.md
+  - https://customer-api.getpliant.com/reference/update-team.md
+  - https://customer-api.getpliant.com/reference/update-transaction-category.md
+  - https://customer-api.getpliant.com/reference/update-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status-batch.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status.md
+  - https://customer-api.getpliant.com/reference/update-transaction-receipt-upload.md
+  - https://customer-api.getpliant.com/reference/upload-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/upload-receipt.md
+  merge:
+    pages: 128
+    deduped: 452
+    conflicts_kept_first: 0

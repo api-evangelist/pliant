@@ -1,0 +1,552 @@
+openapi: 3.2.0
+info:
+  contact:
+    name: API Support
+    email: support@getpliant.com
+    url: https://www.getpliant.com
+  title: Pliant Customer Receipt Automatching API
+  description: Pliant Customer API
+  version: 2.1.0
+  license:
+    name: MIT
+    url: https://opensource.org/license/MIT
+servers:
+- url: https://partner-api.getpliant.com/api
+  description: Pliant Production Server
+- url: https://sandbox.partner-api.getpliant.com/api
+  description: Pliant Sandbox Server
+- url: https://pci-api.getpliant.com
+  description: PCI Vault Production Server
+- url: https://pci-sandbox.partner-api.getpliant.com
+  description: PCI Vault Sandbox Server
+security:
+- bearerAuth: []
+tags:
+- name: Receipt Automatching
+  description: This tag is for operations related to receipt automatching
+paths:
+  /receipts/automatching:
+    post:
+      summary: Automatch and Attach File to Transaction
+      description: Send us a receipt (PDF, PNG, JPEG) and we try to find the corresponding transaction for this receipt and attach it to the matching transaction. This endpoint works **asynchronously** and only starts the automatching process. You will get a callback with the result once it is finished. Or you can query the status yourself.
+      tags:
+      - Receipt Automatching
+      operationId: upload-receipt-to-automatcher
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+              - file
+              - organizationId
+              properties:
+                file:
+                  description: The receipt which should be matched to an existing transaction.
+                  type: string
+                  format: binary
+                organizationId:
+                  description: The organization this receipt belongs to. This is the minimum required data we need to automatch a receipt.
+                  type: string
+                  format: uuid
+                metadata:
+                  type: object
+                  format: json
+                  description: Additional metadata about the receipt. This is optional. If provided, it can enhance the matching process. It not provided, we will use OCR data to match the receipt. **This needs to be provided as a JSON string.**
+                  properties:
+                    amountInMinorUnit:
+                      description: The amount stated on the receipt, in the minor value of the currency. E.g. `1000` for 10.00, or `13579` for 135.79 or `5` for 0.05. The currency itself it not necessary for automatching.
+                      type: integer
+                    merchantName:
+                      description: The name of the merchant on the receipt.
+                      type: string
+                    referenceNumber:
+                      description: The number which distinguishes this specific receipt or invoice.
+                      type: string
+                    transactionReference:
+                      description: The number which references the credit card transaction, if provided with the receipt.
+                      type: string
+                    purchaseDate:
+                      description: The date of the purchase etc. in format `yyyy-MM-dd`. Can also be the date of the invoice or receipt itself.
+                      type: string
+                      format: date
+                    cardId:
+                      description: The card the transaction was made with.
+                      type: string
+                      format: uuid
+                    cardholderId:
+                      description: The [cardholder](/docs/cardholder-entity) that made the transaction.
+                      type: string
+                      format: uuid
+            encoding:
+              file:
+                contentType: image/png, image/jpeg, application/pdf
+              metadata:
+                contentType: application/json
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - automatchingTaskId
+                properties:
+                  automatchingTaskId:
+                    type: string
+                    format: uuid
+                    description: The id of the automatching task for later fetching the status of this task. You will also get a callback if subscribed.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /receipts/automatching/metadata:
+    post:
+      summary: Automatch Metadata to Transaction
+      description: Provide us with metadata about a receipt and we try to find the corresponding transaction for this metadata. Nothing is attached to the transaction, we just provide a matching `transactionId` if found. The more data provided, the better the matching result. This endpoint works **asynchronously** and only starts the automatching process. You will get a callback with the result once it is finished. Or you can query the status yourself.
+      tags:
+      - Receipt Automatching
+      operationId: metadata-receipt-to-automatcher
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - organizationId
+              - metadata
+              properties:
+                organizationId:
+                  description: The organization this receipt metadata belongs to.
+                  type: string
+                  format: uuid
+                metadata:
+                  type: object
+                  description: Metadata to find a matching transaction. The more data provided, the better the matching result.
+                  required:
+                  - amountInMinorUnit
+                  properties:
+                    amountInMinorUnit:
+                      description: The amount stated on the receipt, in the minor value of the currency. E.g. `1000` for 10.00, or `13579` for 135.79 or `5` for 0.05. The currency itself it not necessary for automatching.
+                      type: integer
+                    merchantName:
+                      description: The name of the merchant on the receipt.
+                      type: string
+                    referenceNumber:
+                      description: The number which distinguishes this specific receipt or invoice.
+                      type: string
+                    transactionReference:
+                      description: The number which references the credit card transaction, if provided with the receipt.
+                      type: string
+                    purchaseDate:
+                      description: The date of the purchase etc. in format ´yyyy-MM-dd´. Can also be the date of the invoice or receipt itself.
+                      type: string
+                      format: date
+                    cardId:
+                      description: The card the transaction was made with.
+                      type: string
+                      format: uuid
+                    cardholderId:
+                      description: The [cardholder](/docs/cardholder-entity) that made the transaction.
+                      type: string
+                      format: uuid
+                    cardAccountId:
+                      description: The ID of the [card account](/docs/card-account) this transaction belongs to.
+                      type: string
+                      format: uuid
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - automatchingTaskId
+                properties:
+                  automatchingTaskId:
+                    type: string
+                    format: uuid
+                    description: The id of the automatching task for later fetching the status of this task. You will also get a callback if subscribed.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /receipts/automatching/subscription:
+    post:
+      summary: 'Callback: Add/Update'
+      description: Subscribe to callbacks for this entity or change an existing callback.
+      tags:
+      - Receipt Automatching
+      operationId: create-receipt-automatching-subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                callbackUrl:
+                  type: string
+                  format: uri
+                  example: https://myserver.com/send/callback/here
+                  description: The URL to send the callback to. Must be a valid and reachable URL. We do some basic validation to ensure the URL is syntactically correct and reachable for Pliant. Only HTTPS URLs are supported.
+                eventTypes:
+                  type: array
+                  description: The event types to subscribe to.
+                  items:
+                    type: string
+                    enum:
+                    - RECEIPT_AUTOMATCHING_FINISHED
+              required:
+              - callbackUrl
+              - eventTypes
+      responses:
+        '201':
+          description: Created
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+      callbacks:
+        receiptUpdated:
+          '{$request.body#/callbackUrl}':
+            post:
+              parameters:
+              - in: header
+                name: X-Organization-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the organization this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Partner-Organization-Id
+                schema:
+                  type: string
+                  description: 'Filled, if the value `partnerOrganizationId` is [set](/reference/update-organization) by the partner on the organization itself. Referencing the organization identifier of the partner. Example value: `abc123`.'
+              - in: header
+                name: X-Payment-Program-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the payment program this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Callback-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'A unique identifier for this callback. Can be used to deduplicate callbacks to achieve idempotent behavior. See [guides](/docs/callbacks) for more details. Example value: `12a03093-eaad-4ae5-9d8d-42e7f6f8b7c6`.'
+              - in: header
+                name: X-Callback-Created-At
+                schema:
+                  type: string
+                  format: date-time
+                  description: 'The date and time when the callback was created. Can be used to reorder callbacks. See [guides](/docs/callbacks) for more details. Example value: `2024-03-15T15:55:58.623375258Z`.'
+              requestBody:
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      required:
+                      - automatchingTaskId
+                      - organizationId
+                      - status
+                      - transactionIds
+                      properties:
+                        automatchingTaskId:
+                          type: string
+                          format: uuid
+                          description: The id of the automatching task.
+                        organizationId:
+                          type: string
+                          format: uuid
+                          description: The id of the organization this task belongs to.
+                        matchedTransactions:
+                          type: array
+                          description: The transactions that were matched to the provided data. Can also be empty, if no match was found. In most cases this contains 0..1 matches, but some receipts or invoices refer to more than one transaction. This is then reflected here.
+                          items:
+                            type: object
+                            properties:
+                              transactionId:
+                                type: string
+                                format: uuid
+                                description: The id of the transaction that is a possible match to the provided data.
+                              score:
+                                type: number
+                                format: float
+                                description: The score (from 0..1) of this match. The higher the score, the more likely the match is correct.
+                        status:
+                          type: string
+                          enum:
+                          - IN_PROGRESS
+                          - ERROR_DURING_PROCESSING
+                          - MATCHING_TRANSACTION_FOUND
+                          - MATCHING_TRANSACTION_NOT_FOUND
+                          description: The status of the automatching task.
+                        additionalInformation:
+                          type: string
+                          description: Additional information about the status. E.g. an error message or a reason why no match was found.
+              responses:
+                '200':
+                  description: Ok
+    delete:
+      summary: 'Callback: Remove'
+      description: Remove a callback subscription for this entity.
+      tags:
+      - Receipt Automatching
+      operationId: remove-receipt-automatching-subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                eventTypes:
+                  type: array
+                  description: The event types to unsubscribe from.
+                  items:
+                    type: string
+                    enum:
+                    - RECEIPT_AUTOMATCHING_FINISHED
+              required:
+              - eventTypes
+      responses:
+        '200':
+          description: Ok
+  /receipts/automatching/{automatchingTaskId}:
+    get:
+      summary: Get Status of Automatching Task
+      description: Query the status of the automatching task specified by path parameter `automatchingTaskId`.
+      tags:
+      - Receipt Automatching
+      operationId: get-receipt-automatcher-status
+      parameters:
+      - name: automatchingTaskId
+        in: path
+        required: true
+        description: The id of the automatching task.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - automatchingTaskId
+                - organizationId
+                - status
+                properties:
+                  automatchingTaskId:
+                    type: string
+                    format: uuid
+                    description: The id of the automatching task.
+                  organizationId:
+                    type: string
+                    format: uuid
+                    description: The id of the organization this task belongs to.
+                  matchedTransactions:
+                    type: array
+                    description: The transactions that were matched to the provided data. Can also be empty, if no match was found. In most cases this contains 0..1 matches, but some receipts or invoices refer to more than one transaction. This is then reflected here.
+                    items:
+                      type: object
+                      required:
+                      - transactionId
+                      - score
+                      properties:
+                        transactionId:
+                          type: string
+                          format: uuid
+                          description: The id of the transaction that is a possible match to the provided data.
+                        score:
+                          type: number
+                          format: float
+                          description: The score (from 0..1) of this match. The higher the score, the more likely the match is correct.
+                  status:
+                    type: string
+                    enum:
+                    - IN_PROGRESS
+                    - ERROR_DURING_PROCESSING
+                    - ERROR_FEATURE_NOT_ACTIVE
+                    - MATCHING_TRANSACTION_FOUND
+                    - MATCHING_TRANSACTION_NOT_FOUND
+                    description: The status of the automatching task.
+                  additionalInformation:
+                    type: string
+                    description: Additional information about the status. E.g. a more detailed error message or a reason why no match was found.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: This API uses oAuth2 with client credentials flow to [obtain the Bearer Token](/docs/authenticated-api-usage).
+      bearerFormat: JWT
+x-provenance:
+  method: searched
+  source: https://customer-api.getpliant.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://customer-api.getpliant.com/reference/activate-physical-card.md
+  - https://customer-api.getpliant.com/reference/assign-project-team.md
+  - https://customer-api.getpliant.com/reference/assign-to-team.md
+  - https://customer-api.getpliant.com/reference/bulk-upsert-subscriptions.md
+  - https://customer-api.getpliant.com/reference/card-pan-and-cvv-pci-vault.md
+  - https://customer-api.getpliant.com/reference/card-pan-tokenized-from-pci-proxy.md
+  - https://customer-api.getpliant.com/reference/claim-card-as-copilot.md
+  - https://customer-api.getpliant.com/reference/create-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-transfer.md
+  - https://customer-api.getpliant.com/reference/create-card-account.md
+  - https://customer-api.getpliant.com/reference/create-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-subscription.md
+  - https://customer-api.getpliant.com/reference/create-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/create-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/create-custom-field.md
+  - https://customer-api.getpliant.com/reference/create-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/create-project.md
+  - https://customer-api.getpliant.com/reference/create-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/create-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/create-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/create-team.md
+  - https://customer-api.getpliant.com/reference/create-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/deactivate-card-account.md
+  - https://customer-api.getpliant.com/reference/deactivate-cardholder.md
+  - https://customer-api.getpliant.com/reference/deactivate-team.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field.md
+  - https://customer-api.getpliant.com/reference/delete-project.md
+  - https://customer-api.getpliant.com/reference/delete-receipt.md
+  - https://customer-api.getpliant.com/reference/delete-subscription.md
+  - https://customer-api.getpliant.com/reference/delete-team.md
+  - https://customer-api.getpliant.com/reference/delete-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/generate-test-transactions-in-sandbox.md
+  - https://customer-api.getpliant.com/reference/get-account-entries.md
+  - https://customer-api.getpliant.com/reference/get-accounting-transactions-batch.md
+  - https://customer-api.getpliant.com/reference/get-available-cards.md
+  - https://customer-api.getpliant.com/reference/get-callback-details.md
+  - https://customer-api.getpliant.com/reference/get-callback-log.md
+  - https://customer-api.getpliant.com/reference/get-callback-subscriptions.md
+  - https://customer-api.getpliant.com/reference/get-callback.md
+  - https://customer-api.getpliant.com/reference/get-card-account-details.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts-available-currencies.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts.md
+  - https://customer-api.getpliant.com/reference/get-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/get-card-pin.md
+  - https://customer-api.getpliant.com/reference/get-cardholder-details.md
+  - https://customer-api.getpliant.com/reference/get-cards.md
+  - https://customer-api.getpliant.com/reference/get-custom-field-options.md
+  - https://customer-api.getpliant.com/reference/get-custom-fields.md
+  - https://customer-api.getpliant.com/reference/get-multiple-card-details.md
+  - https://customer-api.getpliant.com/reference/get-organization-details.md
+  - https://customer-api.getpliant.com/reference/get-otp-for-pci-widget.md
+  - https://customer-api.getpliant.com/reference/get-payments-detail.md
+  - https://customer-api.getpliant.com/reference/get-payments.md
+  - https://customer-api.getpliant.com/reference/get-projects.md
+  - https://customer-api.getpliant.com/reference/get-receipt-automatcher-status.md
+  - https://customer-api.getpliant.com/reference/get-receipt-detail.md
+  - https://customer-api.getpliant.com/reference/get-receipts.md
+  - https://customer-api.getpliant.com/reference/get-single-card-details.md
+  - https://customer-api.getpliant.com/reference/get-statement-csv.md
+  - https://customer-api.getpliant.com/reference/get-statement-detail.md
+  - https://customer-api.getpliant.com/reference/get-statementpdf.md
+  - https://customer-api.getpliant.com/reference/get-statements.md
+  - https://customer-api.getpliant.com/reference/get-teams.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail-batch.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail.md
+  - https://customer-api.getpliant.com/reference/get-transactions.md
+  - https://customer-api.getpliant.com/reference/invite-cardholders.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant-with-pci.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant.md
+  - https://customer-api.getpliant.com/reference/issue-card.md
+  - https://customer-api.getpliant.com/reference/list-cardholders.md
+  - https://customer-api.getpliant.com/reference/list-organizations.md
+  - https://customer-api.getpliant.com/reference/load-cards-batch.md
+  - https://customer-api.getpliant.com/reference/lock-card.md
+  - https://customer-api.getpliant.com/reference/metadata-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/receipt-as-merged-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-as-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-original.md
+  - https://customer-api.getpliant.com/reference/receipt-thumbnail.md
+  - https://customer-api.getpliant.com/reference/register-cardholders.md
+  - https://customer-api.getpliant.com/reference/remove-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cards-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/replace-card.md
+  - https://customer-api.getpliant.com/reference/resend-callbacks.md
+  - https://customer-api.getpliant.com/reference/search-callbacks.md
+  - https://customer-api.getpliant.com/reference/simulate-prefund-payment.md
+  - https://customer-api.getpliant.com/reference/simulate-transaction-status-transition.md
+  - https://customer-api.getpliant.com/reference/terminate-card.md
+  - https://customer-api.getpliant.com/reference/unassign-from-team.md
+  - https://customer-api.getpliant.com/reference/unassign-project-team.md
+  - https://customer-api.getpliant.com/reference/unlock-card.md
+  - https://customer-api.getpliant.com/reference/update-card-account.md
+  - https://customer-api.getpliant.com/reference/update-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/update-card-copilots.md
+  - https://customer-api.getpliant.com/reference/update-card-label.md
+  - https://customer-api.getpliant.com/reference/update-card-limit.md
+  - https://customer-api.getpliant.com/reference/update-card-validity-period.md
+  - https://customer-api.getpliant.com/reference/update-card.md
+  - https://customer-api.getpliant.com/reference/update-cardholders.md
+  - https://customer-api.getpliant.com/reference/update-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/update-custom-field.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-accounting-transaction.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-card.md
+  - https://customer-api.getpliant.com/reference/update-project.md
+  - https://customer-api.getpliant.com/reference/update-team.md
+  - https://customer-api.getpliant.com/reference/update-transaction-category.md
+  - https://customer-api.getpliant.com/reference/update-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status-batch.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status.md
+  - https://customer-api.getpliant.com/reference/update-transaction-receipt-upload.md
+  - https://customer-api.getpliant.com/reference/upload-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/upload-receipt.md
+  merge:
+    pages: 128
+    deduped: 452
+    conflicts_kept_first: 0

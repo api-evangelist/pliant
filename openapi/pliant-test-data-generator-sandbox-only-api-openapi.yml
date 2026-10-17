@@ -1,0 +1,408 @@
+openapi: 3.2.0
+info:
+  contact:
+    name: API Support
+    email: support@getpliant.com
+    url: https://www.getpliant.com
+  title: Pliant Customer Test Data Generator (Sandbox-only) API
+  description: Pliant Customer API
+  version: 2.1.0
+  license:
+    name: MIT
+    url: https://opensource.org/license/MIT
+servers:
+- url: https://partner-api.getpliant.com/api
+  description: Pliant Production Server
+- url: https://sandbox.partner-api.getpliant.com/api
+  description: Pliant Sandbox Server
+- url: https://pci-api.getpliant.com
+  description: PCI Vault Production Server
+- url: https://pci-sandbox.partner-api.getpliant.com
+  description: PCI Vault Sandbox Server
+security:
+- bearerAuth: []
+tags:
+- name: Test Data Generator (Sandbox-only)
+  description: This tag is for operations related to test data generation
+paths:
+  /test-data-generator/organizations/prefund:
+    post:
+      summary: Simulate Prefund Payment
+      description: 'Simulate a prefund payment to an existing organizations card account. The payment will appear in the system within 10 minutes after the request was sent.
+
+        This endpoint is ONLY available on our sandbox environment and NOT on production. See documentation for details.'
+      tags:
+      - Test Data Generator (Sandbox-only)
+      operationId: simulate-prefund-payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - organizationId
+              - amount
+              properties:
+                organizationId:
+                  type: string
+                  format: uuid
+                  description: The id of the organization for which the payment should occur.
+                cardAccountId:
+                  type:
+                  - string
+                  - 'null'
+                  format: uuid
+                  description: The id of the card account of the organization to use. If not provided, the default card account of the organization will be used. If provided, it has precedence over the `organizationId` parameter.
+                amount:
+                  type: object
+                  description: The amount to prefund the card account with. The currency must match the currency of the card account.
+                  properties:
+                    value:
+                      type: number
+                      description: The value of the monetary amount, converted to minor units of the currency. For instance 1.00 EUR is 100 cents, thus the value here is `100`. See our [guides](/docs/monetary-values) for more details about how to handle monetary amounts.
+                    currency:
+                      type: string
+                      description: The currency of the monetary amount in ISO 4217 format, for example `EUR` for Euro or `USD` for US Dollar.
+                fromAccount:
+                  type:
+                  - string
+                  - 'null'
+                  description: 'If provided, the prefund will be simulated from this account. Example: `DE89370400440532013000` (has to be a valid IBAN – to generate an IBAN please check [here](http://randomiban.com/?country=Germany)'
+                transfersAllowedStatus:
+                  type:
+                  - string
+                  - 'null'
+                  description: "Status of the newly added bank account for this prefund payment (when this parameter is given `fromAccount` will be defined by the system if not given in this request).\nPossible statuses are `REVIEW`, `AUTHORIZED`, `BLOCKED`. \n- `REVIEW` is a default status that will require manual intervention. \n- `AUTHORIZED` will make the payment appear on the balance directly. \n- `BLOCKED` will block the account and all current and future payments from it.\nDefaults to `AUTHORIZED`.\n"
+                  enum:
+                  - REVIEW
+                  - AUTHORIZED
+                  - BLOCKED
+      responses:
+        '200':
+          description: Ok
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /test-data-generator/transactions:
+    post:
+      summary: Generate Test Transactions
+      description: 'Generate one or multiple test transactions to test certain endpoints and/or callbacks which deal with transactions.
+
+        This endpoint is ONLY available on our sandbox environment and NOT on production. See documentation for details.
+
+
+        `PURCHASE` and `CASH_WITHDRAWAL` amounts must be negative or zero. `PURCHASE_REFUND` and `PURCHASE_CHARGEBACK` amounts must be positive.
+
+        `merchant` accepts only `name` and `externalId`. Merchant country and MCC cannot be set; they are chosen at random. A card restricted to one country will decline generated purchases whenever that random country is outside the list.
+
+
+        Hint: The Pliant web app shows confirmed transactions as pending, since we only switch this status if the transaction is booked/settled. Keep this in mind when using this generator!'
+      tags:
+      - Test Data Generator (Sandbox-only)
+      operationId: generate-test-transactions-in-sandbox
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cardToken:
+                  type: string
+                  description: The 9-digit `token` value from the credit card the transaction(s) should be generated for. You can obtain this token from the [card details endpoint](/reference/get-multiple-card-details). This is NOT the UUID of the card (`cardId`).
+                numberOfTransactions:
+                  type: integer
+                  description: How many transactions should be generated?
+                status:
+                  type: string
+                  description: Status of the transaction(s).
+                  enum:
+                  - PENDING
+                  - CONFIRMED
+                  - DECLINED
+                  - REVERSED
+                type:
+                  type: string
+                  description: Type of the transaction(s).
+                  enum:
+                  - PURCHASE
+                  - CASH_WITHDRAWAL
+                  - PURCHASE_CHARGEBACK
+                  - PURCHASE_REFUND
+                  - STATUS_INQUIRY
+                transactionCategory:
+                  type: string
+                  description: Category of the transaction(s).
+                  enum:
+                  - ADVERTISING_AND_MARKETING
+                  - COMPUTING_AND_SOFTWARE
+                  - EDUCATION_AND_TRAINING
+                  - ELECTRONICS_AND_IT_EQUIPMENT
+                  - ENTERTAINMENT_AND_WELLNESS
+                  - FOOD_AND_DRINKS
+                  - GIFTS_AND_VOUCHERS
+                  - MATERIALS_AND_PACKAGING
+                  - OFFICE_SUPPLIES_AND_EQUIPMENT
+                  - SERVICES
+                  - TRAVEL_AND_ACCOMMODATION
+                  - HEALTHCARE
+                  - OTHER
+                amount:
+                  type: object
+                  properties:
+                    value:
+                      type: number
+                      description: The value of the monetary amount, converted to minor units of the currency. For instance 1.00 EUR is 100 cents, thus the value here is `100`. See our [guides](/docs/monetary-values) for more details about how to handle monetary amounts.
+                    currency:
+                      type: string
+                      description: The currency of the monetary amount in ISO 4217 format, for example `EUR` for Euro or `USD` for US Dollar.
+                fxAmount:
+                  type: object
+                  properties:
+                    value:
+                      type: number
+                      description: The value of the monetary amount, converted to minor units of the currency. For instance 1.00 EUR is 100 cents, thus the value here is `100`. See our [guides](/docs/monetary-values) for more details about how to handle monetary amounts.
+                    currency:
+                      type: string
+                      description: The currency of the monetary amount in ISO 4217 format, for example `EUR` for Euro or `USD` for US Dollar.
+                amountRange:
+                  type: object
+                  properties:
+                    from:
+                      type: number
+                    to:
+                      type: number
+                    currency:
+                      type: string
+                      description: The currency of the monetary amount in ISO 4217 format, for example `EUR` for Euro or `USD` for US Dollar.
+                merchant:
+                  type: object
+                  additionalProperties: false
+                  description: 'Only `name` and `externalId` are applied. Merchant country and MCC cannot be set on this endpoint and are chosen at random.
+
+                    '
+                  properties:
+                    name:
+                      type: string
+                      maxLength: 100
+                      description: Name of the merchant of this transaction.
+                    externalId:
+                      type: string
+                      maxLength: 15
+                      description: Identifier of the merchant at which this transaction occurred.
+              required:
+              - cardToken
+      responses:
+        '200':
+          description: Ok
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /test-data-generator/transactions/{transactionId}/status:
+    post:
+      summary: Simulate Transaction Status Transition
+      description: 'Change the status of an existing transaction in the sandbox environment from `PENDING` to `CONFIRMED`, `REVERSED` or `DECLINED`.
+
+        This endpoint is ONLY available on our sandbox environment and NOT on production. See documentation for details.
+
+
+        Hint: The Pliant web app shows confirmed transactions as pending, since we only switch this status if the transaction is booked/settled. Keep this in mind when using this generator!'
+      tags:
+      - Test Data Generator (Sandbox-only)
+      operationId: simulate-transaction-status-transition
+      parameters:
+      - name: transactionId
+        in: path
+        required: true
+        description: The unique identifier of the transaction to change. The transaction has to be in status `PENDING`.
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  description: The new status of the transaction. The initial status of the transaction is `PENDING`. The status can be changed to `CONFIRMED` or `REVERSED` or `DECLINED`.
+                  enum:
+                  - CONFIRMED
+                  - REVERSED
+                  - DECLINED
+      responses:
+        '200':
+          description: Ok
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: This API uses oAuth2 with client credentials flow to [obtain the Bearer Token](/docs/authenticated-api-usage).
+      bearerFormat: JWT
+x-provenance:
+  method: searched
+  source: https://customer-api.getpliant.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://customer-api.getpliant.com/reference/activate-physical-card.md
+  - https://customer-api.getpliant.com/reference/assign-project-team.md
+  - https://customer-api.getpliant.com/reference/assign-to-team.md
+  - https://customer-api.getpliant.com/reference/bulk-upsert-subscriptions.md
+  - https://customer-api.getpliant.com/reference/card-pan-and-cvv-pci-vault.md
+  - https://customer-api.getpliant.com/reference/card-pan-tokenized-from-pci-proxy.md
+  - https://customer-api.getpliant.com/reference/claim-card-as-copilot.md
+  - https://customer-api.getpliant.com/reference/create-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-transfer.md
+  - https://customer-api.getpliant.com/reference/create-card-account.md
+  - https://customer-api.getpliant.com/reference/create-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-subscription.md
+  - https://customer-api.getpliant.com/reference/create-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/create-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/create-custom-field.md
+  - https://customer-api.getpliant.com/reference/create-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/create-project.md
+  - https://customer-api.getpliant.com/reference/create-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/create-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/create-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/create-team.md
+  - https://customer-api.getpliant.com/reference/create-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/deactivate-card-account.md
+  - https://customer-api.getpliant.com/reference/deactivate-cardholder.md
+  - https://customer-api.getpliant.com/reference/deactivate-team.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field.md
+  - https://customer-api.getpliant.com/reference/delete-project.md
+  - https://customer-api.getpliant.com/reference/delete-receipt.md
+  - https://customer-api.getpliant.com/reference/delete-subscription.md
+  - https://customer-api.getpliant.com/reference/delete-team.md
+  - https://customer-api.getpliant.com/reference/delete-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/generate-test-transactions-in-sandbox.md
+  - https://customer-api.getpliant.com/reference/get-account-entries.md
+  - https://customer-api.getpliant.com/reference/get-accounting-transactions-batch.md
+  - https://customer-api.getpliant.com/reference/get-available-cards.md
+  - https://customer-api.getpliant.com/reference/get-callback-details.md
+  - https://customer-api.getpliant.com/reference/get-callback-log.md
+  - https://customer-api.getpliant.com/reference/get-callback-subscriptions.md
+  - https://customer-api.getpliant.com/reference/get-callback.md
+  - https://customer-api.getpliant.com/reference/get-card-account-details.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts-available-currencies.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts.md
+  - https://customer-api.getpliant.com/reference/get-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/get-card-pin.md
+  - https://customer-api.getpliant.com/reference/get-cardholder-details.md
+  - https://customer-api.getpliant.com/reference/get-cards.md
+  - https://customer-api.getpliant.com/reference/get-custom-field-options.md
+  - https://customer-api.getpliant.com/reference/get-custom-fields.md
+  - https://customer-api.getpliant.com/reference/get-multiple-card-details.md
+  - https://customer-api.getpliant.com/reference/get-organization-details.md
+  - https://customer-api.getpliant.com/reference/get-otp-for-pci-widget.md
+  - https://customer-api.getpliant.com/reference/get-payments-detail.md
+  - https://customer-api.getpliant.com/reference/get-payments.md
+  - https://customer-api.getpliant.com/reference/get-projects.md
+  - https://customer-api.getpliant.com/reference/get-receipt-automatcher-status.md
+  - https://customer-api.getpliant.com/reference/get-receipt-detail.md
+  - https://customer-api.getpliant.com/reference/get-receipts.md
+  - https://customer-api.getpliant.com/reference/get-single-card-details.md
+  - https://customer-api.getpliant.com/reference/get-statement-csv.md
+  - https://customer-api.getpliant.com/reference/get-statement-detail.md
+  - https://customer-api.getpliant.com/reference/get-statementpdf.md
+  - https://customer-api.getpliant.com/reference/get-statements.md
+  - https://customer-api.getpliant.com/reference/get-teams.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail-batch.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail.md
+  - https://customer-api.getpliant.com/reference/get-transactions.md
+  - https://customer-api.getpliant.com/reference/invite-cardholders.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant-with-pci.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant.md
+  - https://customer-api.getpliant.com/reference/issue-card.md
+  - https://customer-api.getpliant.com/reference/list-cardholders.md
+  - https://customer-api.getpliant.com/reference/list-organizations.md
+  - https://customer-api.getpliant.com/reference/load-cards-batch.md
+  - https://customer-api.getpliant.com/reference/lock-card.md
+  - https://customer-api.getpliant.com/reference/metadata-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/receipt-as-merged-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-as-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-original.md
+  - https://customer-api.getpliant.com/reference/receipt-thumbnail.md
+  - https://customer-api.getpliant.com/reference/register-cardholders.md
+  - https://customer-api.getpliant.com/reference/remove-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cards-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/replace-card.md
+  - https://customer-api.getpliant.com/reference/resend-callbacks.md
+  - https://customer-api.getpliant.com/reference/search-callbacks.md
+  - https://customer-api.getpliant.com/reference/simulate-prefund-payment.md
+  - https://customer-api.getpliant.com/reference/simulate-transaction-status-transition.md
+  - https://customer-api.getpliant.com/reference/terminate-card.md
+  - https://customer-api.getpliant.com/reference/unassign-from-team.md
+  - https://customer-api.getpliant.com/reference/unassign-project-team.md
+  - https://customer-api.getpliant.com/reference/unlock-card.md
+  - https://customer-api.getpliant.com/reference/update-card-account.md
+  - https://customer-api.getpliant.com/reference/update-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/update-card-copilots.md
+  - https://customer-api.getpliant.com/reference/update-card-label.md
+  - https://customer-api.getpliant.com/reference/update-card-limit.md
+  - https://customer-api.getpliant.com/reference/update-card-validity-period.md
+  - https://customer-api.getpliant.com/reference/update-card.md
+  - https://customer-api.getpliant.com/reference/update-cardholders.md
+  - https://customer-api.getpliant.com/reference/update-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/update-custom-field.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-accounting-transaction.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-card.md
+  - https://customer-api.getpliant.com/reference/update-project.md
+  - https://customer-api.getpliant.com/reference/update-team.md
+  - https://customer-api.getpliant.com/reference/update-transaction-category.md
+  - https://customer-api.getpliant.com/reference/update-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status-batch.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status.md
+  - https://customer-api.getpliant.com/reference/update-transaction-receipt-upload.md
+  - https://customer-api.getpliant.com/reference/upload-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/upload-receipt.md
+  merge:
+    pages: 128
+    deduped: 452
+    conflicts_kept_first: 0

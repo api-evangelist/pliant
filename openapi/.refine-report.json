@@ -1,0 +1,41 @@
+{
+  "provider": "pliant",
+  "sources": [
+    "pliant-customer-api-openapi.yml"
+  ],
+  "outputs": [
+    "pliant-account-entries-api-openapi.yml",
+    "pliant-accounting-projects-api-openapi.yml",
+    "pliant-accounting-teams-api-openapi.yml",
+    "pliant-accounting-transactions-api-openapi.yml",
+    "pliant-callbacks-api-openapi.yml",
+    "pliant-card-accounts-api-openapi.yml",
+    "pliant-card-controls-api-openapi.yml",
+    "pliant-card-copilots-api-openapi.yml",
+    "pliant-card-sensitive-data-api-openapi.yml",
+    "pliant-cardholders-api-openapi.yml",
+    "pliant-cards-api-openapi.yml",
+    "pliant-custom-fields-api-openapi.yml",
+    "pliant-organizations-api-openapi.yml",
+    "pliant-payments-api-openapi.yml",
+    "pliant-receipt-automatching-api-openapi.yml",
+    "pliant-receipts-api-openapi.yml",
+    "pliant-statements-api-openapi.yml",
+    "pliant-test-data-generator-sandbox-only-api-openapi.yml",
+    "pliant-transactions-api-openapi.yml"
+  ],
+  "archived": [
+    "deleted 1 superseded output(s) from the previous generation"
+  ],
+  "errors": [],
+  "warnings": [
+    "pliant-customer-api-openapi.yml: previously refined output kept for 131 operation(s) no archived document covers (e.g. /account-entries get, /account-entries/subscription delete, /account-entries/subscription post); its other 0 operation(s) came from the archive and were dropped from it. The archive is incomplete for this provider \u2014 re-harvest to restore _original/ as the full source of truth."
+  ],
+  "notes": [
+    "sourced from openapi/_original/ (0 archived document(s)); previously refined output at the top level was skipped rather than re-split",
+    "pliant-customer-api-openapi.yml: upgraded openapi 3.0.1 -> OpenAPI 3.2.0",
+    "superseded outputs removed: pliant-customer-api-openapi.yml",
+    "apis.yml register: written (+19 apis, 19 total)"
+  ],
+  "skipped": []
+}

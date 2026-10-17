@@ -1,0 +1,999 @@
+openapi: 3.2.0
+info:
+  contact:
+    name: API Support
+    email: support@getpliant.com
+    url: https://www.getpliant.com
+  title: Pliant Customer Card Accounts API
+  description: Pliant Customer API
+  version: 2.1.0
+  license:
+    name: MIT
+    url: https://opensource.org/license/MIT
+servers:
+- url: https://partner-api.getpliant.com/api
+  description: Pliant Production Server
+- url: https://sandbox.partner-api.getpliant.com/api
+  description: Pliant Sandbox Server
+- url: https://pci-api.getpliant.com
+  description: PCI Vault Production Server
+- url: https://pci-sandbox.partner-api.getpliant.com
+  description: PCI Vault Sandbox Server
+security:
+- bearerAuth: []
+tags:
+- name: Card Accounts
+  description: This tag is for operations related to card accounts
+paths:
+  /card-accounts:
+    get:
+      summary: List Card Accounts
+      description: Returns a list of all card accounts for the given organization. Each organization has at least one active card account. Card accounts get created during the onboarding process. If multiple card accounts are used, there is exactly one active default card account. This default card account is used if no card account is specified in the request, where card accounts can be used, like when issuing a card. Each card account has one fixed currency for settlements. This currency is used for all transactions made with cards of this card account. More details can be found in our guides section.
+      tags:
+      - Card Accounts
+      operationId: get-card-accounts
+      parameters:
+      - name: organizationId
+        required: true
+        in: query
+        description: The unique identifier of the organization.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/paths/~1card-accounts/post/responses/201/content/application~1json/schema'
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+    post:
+      summary: Create Card Account
+      description: Creates a new card account for the specified organization.
+      tags:
+      - Card Accounts
+      operationId: create-card-account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - organizationId
+              - name
+              properties:
+                organizationId:
+                  type: string
+                  format: uuid
+                  description: The unique identifier of the organization.
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+                  description: The name of the card account.
+                currency:
+                  type:
+                  - string
+                  - 'null'
+                  description: The currency code (e.g., EUR, USD).
+            examples:
+              example-1:
+                value:
+                  organizationId: 123e4567-e89b-12d3-a456-426614174000
+                  name: EURO Main
+                  currency: EUR
+      responses:
+        '201':
+          description: Card account created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - id
+                - organizationId
+                - name
+                - status
+                - currency
+                - paymentFrequency
+                - paymentDefermentInDays
+                - defaultAccount
+                - accountType
+                - createdAt
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                    description: The id of the card account.
+                  organizationId:
+                    type: string
+                    format: uuid
+                    description: The id of the organization this card account belongs to.
+                  name:
+                    type: string
+                    description: The name of the card account.
+                  purpose:
+                    type:
+                    - string
+                    - 'null'
+                    description: Optionally, a description of the purpose of the card account.
+                  status:
+                    type: string
+                    description: "The status of the card account.\n  - `ACTIVE` - the card account is operational.\n  - `PENDING` - the card account is not operational yet, e.g. because the organization is still onboarding.\n  - `DEACTIVATED` - the card account was deactivated and can no longer be used.\n  - `CANCELLED` - the card account was cancelled.\n  - `SUPERSEDED` - the card account was replaced by a successor card account and is kept for historical reasons only.\n    It stays readable, but no new cards, payments or payouts can be created on it. The successor is referenced by `supersededBy`.\n    See the [card account guide](/docs/card-account) for details.\n"
+                    enum:
+                    - ACTIVE
+                    - PENDING
+                    - DEACTIVATED
+                    - CANCELLED
+                    - SUPERSEDED
+                  currency:
+                    type: string
+                    description: The currency of the card account.
+                  bankAccountInformation:
+                    type: array
+                    description: The Pliant-internal bank account information of the card account. This is the bank account where the balance of the card account is kept. This bank account is also used for adding top-up payments to the card account, if it is a prefund or hybrid card account. One card account can have multiple bank accounts. Non-active organizations might not have bank account information. The bank account is Pliant-internal, for the external bank account information see the [separate endpoint](/reference/get-organizations-external-bank-accounts).
+                    items:
+                      type: object
+                      properties:
+                        transferType:
+                          type: string
+                          description: "Flag that indicates which payment rail the processing account is configured for.\n  - `SWIFT` - transfers routed through the SWIFT network.\n  - `LOCAL` - domestic rails such as UK's Faster Payments.\nDepending on this flag, other fields are set or not, e.g. `bic` and `iban` for `SWIFT`, `sortCode` and `accountNumber` for `LOCAL` in case of UK Faster Payments.\nThe field might be `null` or empty, in which case `SWIFT` should be assumed.\n"
+                        beneficiary:
+                          type: string
+                          description: The beneficiary of the bank account. This is the name of the account holder.
+                        bankName:
+                          type: string
+                          description: The name of the bank of the bank account.
+                        bic:
+                          type: string
+                          description: The BIC of the bank account. This is the bank identifier code. For backward compatibility reasons this field is never `null`, but depending on `transferType` it can be empty. In future iterations it will become optional.
+                        iban:
+                          type: string
+                          description: The IBAN of the bank account. This is the international bank account number. For backward compatibility reasons this field is never `null`, but depending on `transferType` it can be empty. In future iterations it will become optional.
+                        sortCode:
+                          type: string
+                          description: Bank identifier that accompanies the beneficiary account. Only set for certain `transferType` values, e.g. UK Faster Payments.
+                        accountNumber:
+                          type: string
+                          description: Account identifier for the beneficiary account. Only set for certain `transferType` values, e.g. UK Faster Payments.
+                  defaultAccount:
+                    type: boolean
+                    description: Indicates whether this is the default card account. There is always one active default card account.
+                  accountType:
+                    type: string
+                    description: The account type of the card account.
+                    enum:
+                    - CREDIT
+                    - PREFUNDED
+                  creditLimit:
+                    type:
+                    - object
+                    - 'null'
+                    description: The credit limit of the card account. The credit limit is the maximum amount of money that can be spent with all cards of this card account. It is always less or equal to the overall credit limit of the organization. Meaning all card accounts share the same organization credit limit. This organization credit limit can be distributed among the card accounts. Only relevant for `CREDIT`-based card accounts.
+                    properties:
+                      value:
+                        type: number
+                      currency:
+                        type: string
+                  availableLimit:
+                    type:
+                    - object
+                    - 'null'
+                    description: The remaining available credit limit of the card account. The available credit limit is the maximum amount of money that can be spent with all cards of this card account. For `PREFUNDED` card accounts, the available credit limit is the remaining balance of the card account.
+                    properties:
+                      value:
+                        type: number
+                      currency:
+                        type: string
+                  balance:
+                    type:
+                    - object
+                    - 'null'
+                    description: The remaining balance of the card account.
+                    properties:
+                      value:
+                        type: number
+                      currency:
+                        type: string
+                  paymentFrequency:
+                    type: string
+                    description: The payment frequency of the card account. This is the frequency with which the card account is settled for this organization. Only relevant for `CREDIT`-based card accounts.
+                    enum:
+                    - DAILY
+                    - WEEKLY
+                    - BI_WEEKLY
+                    - MONTHLY
+                    - PREFUNDED
+                  paymentDefermentInDays:
+                    type: integer
+                    description: The payment deferment in days of the card account. Only relevant for `CREDIT`-based card accounts.
+                  activatedAt:
+                    type:
+                    - string
+                    - 'null'
+                    format: date-time
+                    description: The date and time when the card account was activated.
+                  createdAt:
+                    type: string
+                    format: date-time
+                    description: The date and time when the card account was created.
+                  supersededBy:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                    description: The id of the card account that took over from this one. Only set if this card account has `status` `SUPERSEDED`, `null` otherwise. Follow this id to find the card account that holds the current balance, limits and bank account information.
+                  supersedes:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                    description: The id of the card account this one took over from. Only set if this card account is the successor of a superseded card account, `null` otherwise. The superseded card account remains readable and keeps its historical transactions, statements and account entries.
+                  supersededAt:
+                    type:
+                    - string
+                    - 'null'
+                    format: date-time
+                    description: The date and time when this card account was superseded. Only set together with `supersededBy`, `null` otherwise.
+                  benefitCardAccount:
+                    type: boolean
+                    description: Set to true for the card account that is dedicated to funding benefit cards.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '409':
+          description: Conflict. The request could not be completed due to a conflict with the current state of the resource. You may retry the call.
+          content:
+            application/json:
+              schema:
+                $ref: '#/paths/~1card-accounts~1{cardAccountId}~1deactivate/post/responses/400/content/application~1json/schema'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /card-accounts/available-currencies:
+    get:
+      summary: Get Available Currencies
+      description: Returns a list of available currencies for creating card accounts within an organization.
+      tags:
+      - Card Accounts
+      operationId: get-card-accounts-available-currencies
+      parameters:
+      - name: organizationId
+        required: true
+        in: query
+        description: The unique identifier of the organization.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - currencies
+                properties:
+                  currencies:
+                    type: array
+                    description: List of ISO 4217 currency codes available for the organization.
+                    items:
+                      type: string
+                    example:
+                    - EUR
+                    - USD
+                    - GBP
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /card-accounts/subscription:
+    post:
+      summary: 'Callback: Add/Update'
+      description: Subscribe to callbacks for this entity or change an existing callback.
+      tags:
+      - Card Accounts
+      operationId: create-card-account-subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                callbackUrl:
+                  type: string
+                  format: uri
+                  example: https://myserver.com/send/callback/here
+                  description: The URL to send the callback to. Must be a valid and reachable URL. We do some basic validation to ensure the URL is syntactically correct and reachable for Pliant. Only HTTPS URLs are supported.
+                eventTypes:
+                  type: array
+                  description: The event types to subscribe to.
+                  items:
+                    type: string
+                    enum:
+                    - CARD_ACCOUNT_ADDED
+                    - CARD_ACCOUNT_STATUS_CHANGED
+                    - CARD_ACCOUNT_DETAILS_CHANGED
+                    - CARD_ACCOUNT_BALANCE_CHANGED
+                    - CARD_ACCOUNT_LIMIT_CHANGED
+                    - CARD_ACCOUNT_TRANSFER_COMPLETED
+                    - CARD_ACCOUNT_TRANSFER_FAILED
+              required:
+              - callbackUrl
+              - eventTypes
+      responses:
+        '201':
+          description: Created
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+      callbacks:
+        cardAccountUpdated:
+          '{$request.body#/callbackUrl}':
+            post:
+              description: Callback structure for card account events (`CARD_ACCOUNT_ADDED`, `CARD_ACCOUNT_STATUS_CHANGED`, `CARD_ACCOUNT_DETAILS_CHANGED`, `CARD_ACCOUNT_BALANCE_CHANGED`, `CARD_ACCOUNT_LIMIT_CHANGED`).
+              parameters:
+              - in: header
+                name: X-Organization-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the organization this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Partner-Organization-Id
+                schema:
+                  type: string
+                  description: 'Filled, if the value `partnerOrganizationId` is [set](/reference/update-organization) by the partner on the organization itself. Referencing the organization identifier of the partner. Example value: `abc123`.'
+              - in: header
+                name: X-Payment-Program-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the payment program this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Callback-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'A unique identifier for this callback. Can be used to deduplicate callbacks to achieve idempotent behavior. See [guides](/docs/callbacks) for more details. Example value: `12a03093-eaad-4ae5-9d8d-42e7f6f8b7c6`.'
+              - in: header
+                name: X-Callback-Created-At
+                schema:
+                  type: string
+                  format: date-time
+                  description: 'The date and time when the callback was created. Can be used to reorder callbacks. See [guides](/docs/callbacks) for more details. Example value: `2024-03-15T15:55:58.623375258Z`.'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      properties:
+                        organizationId:
+                          type: string
+                          format: uuid
+                          description: The id of the organization.
+                        cardAccountId:
+                          type: string
+                          format: uuid
+                          description: The id of the card account.
+                        name:
+                          type: string
+                          description: The name of the card account.
+                        status:
+                          type: string
+                          description: The status of the card account. Potential values are `ACTIVE`, `PENDING`, `DEACTIVATED`, `CANCELLED`, `SUPERSEDED`. A change to `SUPERSEDED` is delivered as a `CARD_ACCOUNT_STATUS_CHANGED` event and carries `supersededBy` and `supersededAt`.
+                          enum:
+                          - ACTIVE
+                          - PENDING
+                          - DEACTIVATED
+                          - CANCELLED
+                          - SUPERSEDED
+                        supersededBy:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                          description: The id of the card account that took over from this one. Only set if `status` is `SUPERSEDED`, `null` otherwise. Follow this id to find the card account that holds the current balance, limits and bank account information.
+                        supersedes:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                          description: The id of the card account this one took over from. Only set if this card account is the successor of a superseded card account, `null` otherwise.
+                        supersededAt:
+                          type:
+                          - string
+                          - 'null'
+                          format: date-time
+                          description: The date and time when this card account was superseded. Only set together with `supersededBy`, `null` otherwise.
+                        defaultAccount:
+                          type: boolean
+                          description: Indicates whether this is the default card account. There is always one active default card account.
+                        bankAccountInformation:
+                          type: array
+                          description: The bank account information of the card account. This is the bank account where the balance of the card account is kept. This bank account is also used for adding top-up payments to the card account, if it is a prefund or hybrid card account. One card account can have multiple bank accounts. Non-active organizations might not have bank account information.
+                          items:
+                            type: object
+                            properties:
+                              transferType:
+                                type: string
+                                description: "Flag that indicates which payment rail the processing account is configured for.\n  - `SWIFT` - transfers routed through the SWIFT network.\n  - `LOCAL` - domestic rails such as UK's Faster Payments.\nDepending on this flag, other fields are set or not, e.g. `bic` and `iban` for `SWIFT`, `sortCode` and `accountNumber` for `LOCAL` in case of UK Faster Payments.\nThe field might be `null` or empty, in which case `SWIFT` should be assumed.\n"
+                              beneficiary:
+                                type: string
+                                description: The beneficiary of the bank account. This is the name of the account holder.
+                              bankName:
+                                type: string
+                                description: The name of the bank of the bank account.
+                              bic:
+                                type: string
+                                description: The BIC of the bank account. This is the bank identifier code. For backward compatibility reasons this field is never `null`, but depending on `transferType` it can be empty. In future iterations it will become optional.
+                              iban:
+                                type: string
+                                description: The IBAN of the bank account. This is the international bank account number. For backward compatibility reasons this field is never `null`, but depending on `transferType` it can be empty. In future iterations it will become optional.
+                              sortCode:
+                                type: string
+                                description: Bank identifier that accompanies the beneficiary account. Only set for certain `transferType` values, e.g. UK Faster Payments.
+                              accountNumber:
+                                type: string
+                                description: Account identifier for the beneficiary account. Only set for certain `transferType` values, e.g. UK Faster Payments.
+                        creditLimit:
+                          type:
+                          - object
+                          - 'null'
+                          description: The credit limit of the card account. The credit limit is the maximum amount of money that can be spent with all cards of this card account. It is always less or equal to the overall credit limit of the organization. Meaning all card accounts share the same organization credit limit. This organization credit limit can be distributed among the card accounts. Only relevant for `CREDIT`-based card accounts.
+                          properties:
+                            value:
+                              type: number
+                            currency:
+                              type: string
+                        availableLimit:
+                          type:
+                          - object
+                          - 'null'
+                          description: The remaining available credit limit of the card account. The available credit limit is the maximum amount of money that can be spent with all cards of this card account. For `PREFUNDED` card accounts, the available credit limit is the remaining balance of the card account.
+                          properties:
+                            value:
+                              type: number
+                            currency:
+                              type: string
+              responses:
+                '200':
+                  description: Ok
+        cardAccountTransferFinished:
+          '{$request.body#/callbackUrl}':
+            post:
+              description: Callback structure for card account transfer events (`CARD_ACCOUNT_TRANSFER_COMPLETED`, `CARD_ACCOUNT_TRANSFER_FAILED`). Sent once a [transfer between two card accounts](/reference/create-card-account-transfer) reaches a final status.
+              parameters:
+              - in: header
+                name: X-Organization-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the organization this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Partner-Organization-Id
+                schema:
+                  type: string
+                  description: 'Filled, if the value `partnerOrganizationId` is [set](/reference/update-organization) by the partner on the organization itself. Referencing the organization identifier of the partner. Example value: `abc123`.'
+              - in: header
+                name: X-Payment-Program-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the payment program this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Callback-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'A unique identifier for this callback. Can be used to deduplicate callbacks to achieve idempotent behavior. See [guides](/docs/callbacks) for more details. Example value: `12a03093-eaad-4ae5-9d8d-42e7f6f8b7c6`.'
+              - in: header
+                name: X-Callback-Created-At
+                schema:
+                  type: string
+                  format: date-time
+                  description: 'The date and time when the callback was created. Can be used to reorder callbacks. See [guides](/docs/callbacks) for more details. Example value: `2024-03-15T15:55:58.623375258Z`.'
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      required:
+                      - eventType
+                      - internalTransferId
+                      - sourceCardAccountId
+                      - targetCardAccountId
+                      - organizationId
+                      - status
+                      - createdAt
+                      properties:
+                        eventType:
+                          type: string
+                          description: The type of event.
+                          enum:
+                          - CARD_ACCOUNT_TRANSFER_COMPLETED
+                          - CARD_ACCOUNT_TRANSFER_FAILED
+                        internalTransferId:
+                          type: string
+                          format: uuid
+                          description: The id of the transfer, as returned when the transfer was requested.
+                        sourceCardAccountId:
+                          type: string
+                          format: uuid
+                          description: The id of the source card account of the transfer. It is debited only if the transfer completes.
+                        targetCardAccountId:
+                          type: string
+                          format: uuid
+                          description: The id of the target card account of the transfer. It is credited only if the transfer completes.
+                        organizationId:
+                          type: string
+                          format: uuid
+                          description: The id of the organization.
+                        amount:
+                          type:
+                          - object
+                          - 'null'
+                          description: The amount to be credited to the target card account. Credited only if the transfer completes.
+                          required:
+                          - value
+                          - currency
+                          properties:
+                            value:
+                              type: number
+                              description: The value of the monetary amount, converted to minor units of the currency. For instance 1.00 EUR is 100 cents, thus the value here is `100`.
+                            currency:
+                              type: string
+                              description: The currency of the monetary amount in ISO 4217 format, for example `EUR`.
+                        status:
+                          type: string
+                          description: The final status of the transfer. Always `COMPLETED` for `CARD_ACCOUNT_TRANSFER_COMPLETED` and `FAILED` for `CARD_ACCOUNT_TRANSFER_FAILED`.
+                          enum:
+                          - COMPLETED
+                          - FAILED
+                        createdAt:
+                          type: string
+                          format: date-time
+                          description: The date and time when the transfer was created.
+              responses:
+                '200':
+                  description: Ok
+    delete:
+      summary: 'Callback: Remove'
+      description: Remove a callback subscription for this entity.
+      tags:
+      - Card Accounts
+      operationId: remove-card-account-subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                eventTypes:
+                  type: array
+                  description: The event types to unsubscribe from.
+                  items:
+                    type: string
+                    enum:
+                    - CARD_ACCOUNT_ADDED
+                    - CARD_ACCOUNT_STATUS_CHANGED
+                    - CARD_ACCOUNT_DETAILS_CHANGED
+                    - CARD_ACCOUNT_BALANCE_CHANGED
+                    - CARD_ACCOUNT_LIMIT_CHANGED
+                    - CARD_ACCOUNT_TRANSFER_COMPLETED
+                    - CARD_ACCOUNT_TRANSFER_FAILED
+              required:
+              - eventTypes
+      responses:
+        '200':
+          description: Ok
+  /card-accounts/transfer:
+    post:
+      summary: Transfer Between Card Accounts
+      description: Transfers money between two card accounts of the same organization, in the same currency. The transfer is processed asynchronously. The request is accepted with `202` and the returned `internalTransferId` identifies the transfer. Subscribe to the `CARD_ACCOUNT_TRANSFER_COMPLETED` and `CARD_ACCOUNT_TRANSFER_FAILED` card account callbacks to learn its outcome.
+      tags:
+      - Card Accounts
+      operationId: create-card-account-transfer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - organizationId
+              - sourceCardAccountId
+              - moneyToSend
+              - targetCardAccountId
+              - moneyToReceive
+              properties:
+                organizationId:
+                  type: string
+                  format: uuid
+                  description: The unique identifier of the organization both card accounts belong to.
+                sourceCardAccountId:
+                  type: string
+                  format: uuid
+                  description: The unique identifier of the card account the money is debited from.
+                moneyToSend:
+                  type: object
+                  required:
+                  - value
+                  - currency
+                  description: The amount debited from the source card account. Must be greater than 0.
+                  properties:
+                    value:
+                      type: number
+                      minimum: 1
+                      description: The value of the monetary amount, converted to minor units of the currency. For instance 1.00 EUR is 100 cents, thus the value here is `100`.
+                    currency:
+                      type: string
+                      description: The currency of the monetary amount in ISO 4217 format, for example `EUR`.
+                targetCardAccountId:
+                  type: string
+                  format: uuid
+                  description: The unique identifier of the card account the money is credited to.
+                moneyToReceive:
+                  type: object
+                  required:
+                  - value
+                  - currency
+                  description: The amount credited to the target card account. Must equal `moneyToSend`.
+                  properties:
+                    value:
+                      type: number
+                      minimum: 1
+                      description: The value of the monetary amount, converted to minor units of the currency. For instance 1.00 EUR is 100 cents, thus the value here is `100`.
+                    currency:
+                      type: string
+                      description: The currency of the monetary amount in ISO 4217 format, for example `EUR`.
+                fxQuoteId:
+                  type: string
+                  format: uuid
+                  description: Reserved for cross-currency transfers. Support for cross-currency transfers is coming soon; until then, omit this field.
+            example:
+              organizationId: 31dd1fe8-cbc8-4c92-8663-babcecb66865
+              sourceCardAccountId: 8cdd9298-cc60-4fed-940d-2ac1cc406913
+              moneyToSend:
+                value: 10050
+                currency: EUR
+              targetCardAccountId: 1480131f-a826-4028-8545-8e124dc8523a
+              moneyToReceive:
+                value: 10050
+                currency: EUR
+      responses:
+        '202':
+          description: Accepted. The transfer will be processed asynchronously.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - internalTransferId
+                properties:
+                  internalTransferId:
+                    type: string
+                    format: uuid
+                    description: The unique identifier of the transfer. Use it to match the transfer callbacks.
+              example:
+                internalTransferId: c3d4e5f6-a7b8-4c9d-8e0f-2a3b4c5d6e7f
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /card-accounts/{cardAccountId}:
+    get:
+      summary: Card Account Details
+      description: Returns the details of a card account by its unique identifier.
+      tags:
+      - Card Accounts
+      operationId: get-card-account-details
+      parameters:
+      - name: cardAccountId
+        in: path
+        required: true
+        description: The unique identifier of the card account.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/paths/~1card-accounts/post/responses/201/content/application~1json/schema'
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+    patch:
+      summary: Update Card Account
+      description: Updates a card account. The organization ownership is automatically determined from the card account.
+      tags:
+      - Card Accounts
+      operationId: update-card-account
+      parameters:
+      - name: cardAccountId
+        in: path
+        required: true
+        description: The unique identifier of the card account.
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - name
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+                  description: The new name for the card account.
+      responses:
+        '200':
+          description: Card account successfully updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/paths/~1card-accounts/post/responses/201/content/application~1json/schema'
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /card-accounts/{cardAccountId}/deactivate:
+    post:
+      summary: Deactivate Card Account
+      description: Deactivates a card account. The organization ownership is automatically determined from the card account. A card account with `status` `SUPERSEDED` cannot be deactivated, since it is already in a terminal state.
+      tags:
+      - Card Accounts
+      operationId: deactivate-card-account
+      parameters:
+      - name: cardAccountId
+        in: path
+        required: true
+        description: The unique identifier of the card account to deactivate.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Card account successfully deactivated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/paths/~1card-accounts/post/responses/201/content/application~1json/schema'
+        '400':
+          description: Bad Request - Cannot deactivate the default card account.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errorCode:
+                    type: string
+                    description: The error code
+                  exceptionId:
+                    type: string
+                    format: uuid
+                    description: The id of the exception that was thrown
+                  message:
+                    type: string
+                    description: The cause of the error or further explanations on the error
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: This API uses oAuth2 with client credentials flow to [obtain the Bearer Token](/docs/authenticated-api-usage).
+      bearerFormat: JWT
+x-provenance:
+  method: searched
+  source: https://customer-api.getpliant.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://customer-api.getpliant.com/reference/activate-physical-card.md
+  - https://customer-api.getpliant.com/reference/assign-project-team.md
+  - https://customer-api.getpliant.com/reference/assign-to-team.md
+  - https://customer-api.getpliant.com/reference/bulk-upsert-subscriptions.md
+  - https://customer-api.getpliant.com/reference/card-pan-and-cvv-pci-vault.md
+  - https://customer-api.getpliant.com/reference/card-pan-tokenized-from-pci-proxy.md
+  - https://customer-api.getpliant.com/reference/claim-card-as-copilot.md
+  - https://customer-api.getpliant.com/reference/create-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-transfer.md
+  - https://customer-api.getpliant.com/reference/create-card-account.md
+  - https://customer-api.getpliant.com/reference/create-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-subscription.md
+  - https://customer-api.getpliant.com/reference/create-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/create-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/create-custom-field.md
+  - https://customer-api.getpliant.com/reference/create-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/create-project.md
+  - https://customer-api.getpliant.com/reference/create-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/create-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/create-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/create-team.md
+  - https://customer-api.getpliant.com/reference/create-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/deactivate-card-account.md
+  - https://customer-api.getpliant.com/reference/deactivate-cardholder.md
+  - https://customer-api.getpliant.com/reference/deactivate-team.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field.md
+  - https://customer-api.getpliant.com/reference/delete-project.md
+  - https://customer-api.getpliant.com/reference/delete-receipt.md
+  - https://customer-api.getpliant.com/reference/delete-subscription.md
+  - https://customer-api.getpliant.com/reference/delete-team.md
+  - https://customer-api.getpliant.com/reference/delete-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/generate-test-transactions-in-sandbox.md
+  - https://customer-api.getpliant.com/reference/get-account-entries.md
+  - https://customer-api.getpliant.com/reference/get-accounting-transactions-batch.md
+  - https://customer-api.getpliant.com/reference/get-available-cards.md
+  - https://customer-api.getpliant.com/reference/get-callback-details.md
+  - https://customer-api.getpliant.com/reference/get-callback-log.md
+  - https://customer-api.getpliant.com/reference/get-callback-subscriptions.md
+  - https://customer-api.getpliant.com/reference/get-callback.md
+  - https://customer-api.getpliant.com/reference/get-card-account-details.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts-available-currencies.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts.md
+  - https://customer-api.getpliant.com/reference/get-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/get-card-pin.md
+  - https://customer-api.getpliant.com/reference/get-cardholder-details.md
+  - https://customer-api.getpliant.com/reference/get-cards.md
+  - https://customer-api.getpliant.com/reference/get-custom-field-options.md
+  - https://customer-api.getpliant.com/reference/get-custom-fields.md
+  - https://customer-api.getpliant.com/reference/get-multiple-card-details.md
+  - https://customer-api.getpliant.com/reference/get-organization-details.md
+  - https://customer-api.getpliant.com/reference/get-otp-for-pci-widget.md
+  - https://customer-api.getpliant.com/reference/get-payments-detail.md
+  - https://customer-api.getpliant.com/reference/get-payments.md
+  - https://customer-api.getpliant.com/reference/get-projects.md
+  - https://customer-api.getpliant.com/reference/get-receipt-automatcher-status.md
+  - https://customer-api.getpliant.com/reference/get-receipt-detail.md
+  - https://customer-api.getpliant.com/reference/get-receipts.md
+  - https://customer-api.getpliant.com/reference/get-single-card-details.md
+  - https://customer-api.getpliant.com/reference/get-statement-csv.md
+  - https://customer-api.getpliant.com/reference/get-statement-detail.md
+  - https://customer-api.getpliant.com/reference/get-statementpdf.md
+  - https://customer-api.getpliant.com/reference/get-statements.md
+  - https://customer-api.getpliant.com/reference/get-teams.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail-batch.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail.md
+  - https://customer-api.getpliant.com/reference/get-transactions.md
+  - https://customer-api.getpliant.com/reference/invite-cardholders.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant-with-pci.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant.md
+  - https://customer-api.getpliant.com/reference/issue-card.md
+  - https://customer-api.getpliant.com/reference/list-cardholders.md
+  - https://customer-api.getpliant.com/reference/list-organizations.md
+  - https://customer-api.getpliant.com/reference/load-cards-batch.md
+  - https://customer-api.getpliant.com/reference/lock-card.md
+  - https://customer-api.getpliant.com/reference/metadata-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/receipt-as-merged-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-as-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-original.md
+  - https://customer-api.getpliant.com/reference/receipt-thumbnail.md
+  - https://customer-api.getpliant.com/reference/register-cardholders.md
+  - https://customer-api.getpliant.com/reference/remove-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cards-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/replace-card.md
+  - https://customer-api.getpliant.com/reference/resend-callbacks.md
+  - https://customer-api.getpliant.com/reference/search-callbacks.md
+  - https://customer-api.getpliant.com/reference/simulate-prefund-payment.md
+  - https://customer-api.getpliant.com/reference/simulate-transaction-status-transition.md
+  - https://customer-api.getpliant.com/reference/terminate-card.md
+  - https://customer-api.getpliant.com/reference/unassign-from-team.md
+  - https://customer-api.getpliant.com/reference/unassign-project-team.md
+  - https://customer-api.getpliant.com/reference/unlock-card.md
+  - https://customer-api.getpliant.com/reference/update-card-account.md
+  - https://customer-api.getpliant.com/reference/update-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/update-card-copilots.md
+  - https://customer-api.getpliant.com/reference/update-card-label.md
+  - https://customer-api.getpliant.com/reference/update-card-limit.md
+  - https://customer-api.getpliant.com/reference/update-card-validity-period.md
+  - https://customer-api.getpliant.com/reference/update-card.md
+  - https://customer-api.getpliant.com/reference/update-cardholders.md
+  - https://customer-api.getpliant.com/reference/update-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/update-custom-field.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-accounting-transaction.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-card.md
+  - https://customer-api.getpliant.com/reference/update-project.md
+  - https://customer-api.getpliant.com/reference/update-team.md
+  - https://customer-api.getpliant.com/reference/update-transaction-category.md
+  - https://customer-api.getpliant.com/reference/update-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status-batch.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status.md
+  - https://customer-api.getpliant.com/reference/update-transaction-receipt-upload.md
+  - https://customer-api.getpliant.com/reference/upload-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/upload-receipt.md
+  merge:
+    pages: 128
+    deduped: 452
+    conflicts_kept_first: 0

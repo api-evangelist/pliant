@@ -1,0 +1,1470 @@
+openapi: 3.2.0
+info:
+  contact:
+    name: API Support
+    email: support@getpliant.com
+    url: https://www.getpliant.com
+  title: Pliant Customer Cardholders API
+  description: Pliant Customer API
+  version: 2.1.0
+  license:
+    name: MIT
+    url: https://opensource.org/license/MIT
+servers:
+- url: https://partner-api.getpliant.com/api
+  description: Pliant Production Server
+- url: https://sandbox.partner-api.getpliant.com/api
+  description: Pliant Sandbox Server
+- url: https://pci-api.getpliant.com
+  description: PCI Vault Production Server
+- url: https://pci-sandbox.partner-api.getpliant.com
+  description: PCI Vault Sandbox Server
+security:
+- bearerAuth: []
+tags:
+- name: Cardholders
+  description: This tag is for operations related to cardholders
+paths:
+  /cardholders:
+    get:
+      summary: List Cardholders
+      description: Returns a list of cardholders. You can use the `limit`, `page`, `sortBy` and `sortDirection` parameters to filter and sort the results.
+      tags:
+      - Cardholders
+      operationId: list-cardholders
+      parameters:
+      - name: organizationId
+        in: query
+        required: true
+        description: The unique identifier of the organization.
+        schema:
+          type: string
+          format: uuid
+      - name: status
+        in: query
+        description: The status to filter by.
+        schema:
+          type: string
+          enum:
+          - INVITED
+          - ACTIVE
+          - DEACTIVATED
+      - name: email
+        in: query
+        description: Filter by email address, case insensitive
+        schema:
+          type: string
+      - name: fromDate
+        in: query
+        description: The `from` date to filter by as zero-offset UTC time. The date boundary is inclusive. Meaning we compare with `>=`.
+        schema:
+          type: string
+          format: date-time
+          example: '2024-07-19T15:00:00.000000Z'
+      - name: toDate
+        in: query
+        description: The `to` date to filter by as zero-offset UTC time. The date boundary is inclusive. Meaning we compare with `<=`.
+        schema:
+          type: string
+          format: date-time
+          example: '2024-07-19T15:00:00.000000Z'
+      - name: byDateField
+        in: query
+        description: The date field to filter by if `fromDate` and `toDate` are present.
+        schema:
+          type:
+          - string
+          - 'null'
+          enum:
+          - registeredAt
+          - updatedAt
+          default: registeredAt
+      - name: limit
+        in: query
+        description: The maximum number of items to return per page. The default value if not provided is 100, the maximum allowed value is 1000.
+        schema:
+          type: integer
+      - name: page
+        in: query
+        description: The page number to return, starting with 0, this counts up to the total number of pages. The total number of pages is determined by the total number of records divided by the limit.
+        schema:
+          type: integer
+      - name: sortBy
+        in: query
+        description: The field to sort by.
+        schema:
+          type: string
+          enum:
+          - firstName
+          - lastName
+      - name: sortDirection
+        in: query
+        description: The direction to sort by.
+        schema:
+          type: string
+          enum:
+          - ASC
+          - DESC
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      allOf:
+                      - type: object
+                        required:
+                        - cardholderId
+                        properties:
+                          cardholderId:
+                            type: string
+                            format: uuid
+                            description: The ID of the cardholder.
+                      - type: object
+                        required:
+                        - firstName
+                        - lastName
+                        - email
+                        properties:
+                          firstName:
+                            type: string
+                            description: 'The first name of the cardholder. This will be printed on credit cards as the cardholder. It is important to note, that only the following characters are allowed for issuing cards: `A-Z`, `a-z`, `0-9`, `äöüÄÖÜ.-` The combined length of first name and last name must not exceed 24 characters. One additional character is reserved for the space inserted between them when displayed on the card (25 characters in total).'
+                          lastName:
+                            type: string
+                            description: 'The last name of the cardholder. This will be printed on credit cards as the cardholder. It is important to note, that only the following characters are allowed for issuing cards: `A-Z`, `a-z`, `0-9`, `äöüÄÖÜ.-` The combined length of first name and last name must not exceed 24 characters. One additional character is reserved for the space inserted between them when displayed on the card (25 characters in total).'
+                          email:
+                            type: string
+                            description: The email address of the cardholder. This will be used for email communication.
+                          status:
+                            type: string
+                            description: The status of the cardholder.
+                            enum:
+                            - INVITED
+                            - ACTIVE
+                            - DEACTIVATED
+                          registeredAt:
+                            type: string
+                            format: date-time
+                            description: The date-time when cardholder was registered.
+                          updatedAt:
+                            type:
+                            - string
+                            - 'null'
+                            format: date-time
+                            description: The date-time when cardholder information was updated.
+                  hasNextPage:
+                    type: boolean
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /cardholders/invite:
+    post:
+      summary: Invite Cardholder
+      description: Invite a new cardholder to Pliant. An invite email to the provided email address will be triggered, and the cardholder needs to register with Pliant using our registration flow. This means the cardholder is able to use Pliant web and mobile apps once fully registered. You will receive a callback once the cardholder is fully registered and can be used.
+      tags:
+      - Cardholders
+      operationId: invite-cardholders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - organizationId
+              - firstName
+              - lastName
+              - email
+              - language
+              - isOwner
+              properties:
+                organizationId:
+                  type: string
+                  format: uuid
+                  description: The ID of the organization.
+                salutation:
+                  type: string
+                  enum:
+                  - MR
+                  - MRS
+                  description: Used mainly for email communication
+                firstName:
+                  type: string
+                  description: 'The first name of the cardholder. This will be printed on credit cards as the cardholder. It is important to note, that only the following characters are allowed for issuing cards: `A-Z`, `a-z`, `0-9`, `äöüÄÖÜ.-` The combined length of first name and last name must not exceed 24 characters. One additional character is reserved for the space inserted between them when displayed on the card (25 characters in total). The full legal first name must be provided, since it is used for sanctions screening. Initial-only values are rejected: a single letter (e.g. `K`), a single letter followed by a period (e.g. `K.`) and sequences of initials with or without periods (e.g. `J R`, `J. R.`). Short names with two or more letters (e.g. `Li`, `Ng`, `Wu`, `Xu`) are valid. A violation results in a `400 Bad Request` with the error code `INCOMPLETE_LEGAL_NAME`.'
+                lastName:
+                  type: string
+                  description: 'The last name of the cardholder. This will be printed on credit cards as the cardholder. It is important to note, that only the following characters are allowed for issuing cards: `A-Z`, `a-z`, `0-9`, `äöüÄÖÜ.-` The combined length of first name and last name must not exceed 24 characters. One additional character is reserved for the space inserted between them when displayed on the card (25 characters in total). The full legal last name must be provided, since it is used for sanctions screening. Initial-only values are rejected: a single letter (e.g. `K`), a single letter followed by a period (e.g. `K.`) and sequences of initials with or without periods (e.g. `J R`, `J. R.`). Short names with two or more letters (e.g. `Li`, `Ng`, `Wu`, `Xu`) are valid. A violation results in a `400 Bad Request` with the error code `INCOMPLETE_LEGAL_NAME`.'
+                email:
+                  type: string
+                  maxLength: 50
+                  description: The email address of the cardholder. This will be used for email communication.
+                phoneNumber:
+                  type: string
+                  maxLength: 16
+                  pattern: ^\+[0-9]{8,15}$
+                  description: Phone number must start with `+` followed by 8 to 15 numbers, e.g. `+49123456789`.
+                language:
+                  type: string
+                  description: Used for setting the language in Pliant apps as well as for email communication.
+                  enum:
+                  - en
+                  - de
+                  - es
+                  - fi
+                  - fr
+                  - it
+                  - pt
+                  - nl
+                  - et
+                  - el
+                  - lv
+                  - lt
+                  - sk
+                  - sl
+                  - pl
+                  - hu
+                locale:
+                  type:
+                  - string
+                  - 'null'
+                  enum:
+                  - en-US
+                  example: en-US
+                  description: Optional locale. When provided, its language subtag must match `language`.
+                isOwner:
+                  type: boolean
+                  default: false
+                  description: If you want to invite the first owner (during onboarding and before authorization was granted) please use the endpoint POST `/cardholders/invite-owner`.
+                dateOfBirth:
+                  type:
+                  - string
+                  - 'null'
+                  format: date
+                  description: The date-of-birth of the cardholder.
+                nationality:
+                  type:
+                  - string
+                  - 'null'
+                  description: The nationality of the cardholder (ISO 3166-1 alpha-2).
+                personalAddress:
+                  type:
+                  - object
+                  - 'null'
+                  description: The personal address of the cardholder.
+                  properties:
+                    country:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 2
+                      description: The country of the address in ISO 3166-1 alpha-2 notation.
+                    state:
+                      type:
+                      - string
+                      - 'null'
+                      minLength: 2
+                      maxLength: 2
+                      pattern: ^[A-Z]{2}$
+                      description: The US state (e.g. `CA`, `NY`). Only applicable when `country` is `US`.
+                    city:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: The city of the address.
+                    postalCode:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 10
+                      description: The postal code of the address. Must match the country-specific format (e.g. 5 digits for `DE`/`FR`/`ES`, 4 digits for `AT`/`BE`). Both `postalCode` and `country` must be provided together.
+                    streetName:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: The street name of the address.
+                    streetNumber:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: The street number of the address.
+                    additionalInformation:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: Optional additional address information.
+                deliveryAddress:
+                  type:
+                  - object
+                  - 'null'
+                  description: The delivery address of the cardholder.
+                  properties:
+                    country:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 2
+                      description: The country of the address in ISO 3166-1 alpha-2 notation.
+                    state:
+                      type:
+                      - string
+                      - 'null'
+                      minLength: 2
+                      maxLength: 2
+                      pattern: ^[A-Z]{2}$
+                      description: The US state (e.g. `CA`, `NY`). Only applicable when `country` is `US`.
+                    city:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: The city of the address.
+                    postalCode:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 10
+                      description: The postal code of the address. Must match the country-specific format (e.g. 5 digits for `DE`/`FR`/`ES`, 4 digits for `AT`/`BE`). Both `postalCode` and `country` must be provided together.
+                    streetName:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: The street name of the address.
+                    streetNumber:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: The street number of the address.
+                    additionalInformation:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: Optional additional address information.
+      responses:
+        '201':
+          description: Cardholder is in creation process, wait for the callback to use it.
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/paths/~1cardholders/get/responses/200/content/application~1json/schema/properties/data/items/allOf/0'
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /cardholders/register:
+    post:
+      summary: Register Cardholder
+      description: 'Register a new cardholder directly as an active cardholder. This creates the cardholder _without_ the option to use Pliant-based apps like the web or mobile app. This is normally used if the cardholders only interact with the API consumers app and not Pliant itself.
+
+        Wait for the callback about the fully finished registration process to use this cardholder.
+
+        For travel use cases, the cardholder can also be a purely technical cardholder. Meaning it is used for issuing a variety of cards, each with a custom customer first and last names. For details, please contact Pliant directly.'
+      tags:
+      - Cardholders
+      operationId: register-cardholders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - organizationId
+              - firstName
+              - lastName
+              - email
+              - language
+              - tocConfirmedAt
+              - phoneNumberVerifiedAt
+              properties:
+                organizationId:
+                  type: string
+                  format: uuid
+                  description: The ID of the organization.
+                salutation:
+                  type: string
+                  description: Used mainly for email communication.
+                  enum:
+                  - MR
+                  - MRS
+                firstName:
+                  type: string
+                  description: 'The first name of the cardholder. This will be printed on credit cards as the cardholder. It is important to note, that only the following characters are allowed for issuing cards: `A-Z`, `a-z`, `0-9`, `äöüÄÖÜ.-` The combined length of first name and last name must not exceed 24 characters. One additional character is reserved for the space inserted between them when displayed on the card (25 characters in total). The full legal first name must be provided, since it is used for sanctions screening. Initial-only values are rejected: a single letter (e.g. `K`), a single letter followed by a period (e.g. `K.`) and sequences of initials with or without periods (e.g. `J R`, `J. R.`). Short names with two or more letters (e.g. `Li`, `Ng`, `Wu`, `Xu`) are valid. A violation results in a `400 Bad Request` with the error code `INCOMPLETE_LEGAL_NAME`.'
+                lastName:
+                  type: string
+                  description: 'The last name of the cardholder. This will be printed on credit cards as the cardholder. It is important to note, that only the following characters are allowed for issuing cards: `A-Z`, `a-z`, `0-9`, `äöüÄÖÜ.-` The combined length of first name and last name must not exceed 24 characters. One additional character is reserved for the space inserted between them when displayed on the card (25 characters in total). The full legal last name must be provided, since it is used for sanctions screening. Initial-only values are rejected: a single letter (e.g. `K`), a single letter followed by a period (e.g. `K.`) and sequences of initials with or without periods (e.g. `J R`, `J. R.`). Short names with two or more letters (e.g. `Li`, `Ng`, `Wu`, `Xu`) are valid. A violation results in a `400 Bad Request` with the error code `INCOMPLETE_LEGAL_NAME`.'
+                email:
+                  type: string
+                  maxLength: 50
+                  description: The email address of the cardholder. This will be used for email communication.
+                phoneNumber:
+                  type:
+                  - string
+                  - 'null'
+                  maxLength: 16
+                  pattern: ^\+[0-9]{8,15}$
+                  description: If provided, the phone number must start with `+` followed by 8 to 15 numbers, e.g. `+49123456789`. As long as the cardholder does not have a phone number, no cards can be issued for this cardholder! The phone number is mandatory for card usage, since needed for 3DS security mechanism during a purchase.
+                language:
+                  type: string
+                  enum:
+                  - en
+                  - de
+                  - es
+                  - fi
+                  - fr
+                  - it
+                  - pt
+                  - nl
+                  - et
+                  - el
+                  - lv
+                  - lt
+                  - sk
+                  - sl
+                  - pl
+                  - hu
+                  description: Used for setting the language in Pliant apps as well as for email communication.
+                locale:
+                  type:
+                  - string
+                  - 'null'
+                  enum:
+                  - en-US
+                  example: en-US
+                  description: Optional locale. When provided, its language subtag must match `language`.
+                tocConfirmedAt:
+                  type: string
+                  format: date-time
+                  description: The date-time the terms and conditions which apply to this [cardholder](/docs/cardholder-entity) were confirmed by the [cardholder](/docs/cardholder-entity) itself. Please refer to Pliant if you are unsure which terms and conditions are meant here. E.g. `2022-04-13T14:49:50.237794Z`.
+                  example: '2024-07-19T15:00:00.000000Z'
+                phoneNumberVerifiedAt:
+                  type: string
+                  format: date-time
+                  description: The date-time the phone number was verified by the cardholder. E.g. `2022-04-13T14:49:50.237794Z`.
+                  example: '2024-07-19T15:00:00.000000Z'
+                dateOfBirth:
+                  type:
+                  - string
+                  - 'null'
+                  format: date
+                  description: The date-of-birth of the cardholder. Depending on the compliance configuration of your payment program, this field may be required. Omitting it in those cases will result in a 400 Bad Request.
+                nationality:
+                  type:
+                  - string
+                  - 'null'
+                  description: The nationality of the cardholder (ISO 3166-1 alpha-2). Depending on the compliance configuration of your payment program, this field may be required. Omitting it in those cases will result in a 400 Bad Request.
+                personalAddress:
+                  type:
+                  - object
+                  - 'null'
+                  description: The personal address of the cardholder.
+                  properties:
+                    country:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 2
+                      description: The country of the address in ISO 3166-1 alpha-2 notation.
+                    state:
+                      type:
+                      - string
+                      - 'null'
+                      minLength: 2
+                      maxLength: 2
+                      pattern: ^[A-Z]{2}$
+                      description: The US state (e.g. `CA`, `NY`). Only applicable when `country` is `US`.
+                    city:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: The city of the address.
+                    postalCode:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 10
+                      description: The postal code of the address. Must match the country-specific format (e.g. 5 digits for `DE`/`FR`/`ES`, 4 digits for `AT`/`BE`). Both `postalCode` and `country` must be provided together.
+                    streetName:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: The street name of the address.
+                    streetNumber:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: The street number of the address.
+                    additionalInformation:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: Optional additional address information.
+                deliveryAddress:
+                  type:
+                  - object
+                  - 'null'
+                  description: The delivery address of the cardholder.
+                  properties:
+                    country:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 2
+                      description: The country of the address in ISO 3166-1 alpha-2 notation.
+                    state:
+                      type:
+                      - string
+                      - 'null'
+                      minLength: 2
+                      maxLength: 2
+                      pattern: ^[A-Z]{2}$
+                      description: The US state (e.g. `CA`, `NY`). Only applicable when `country` is `US`.
+                    city:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: The city of the address.
+                    postalCode:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 10
+                      description: The postal code of the address. Must match the country-specific format (e.g. 5 digits for `DE`/`FR`/`ES`, 4 digits for `AT`/`BE`). Both `postalCode` and `country` must be provided together.
+                    streetName:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: The street name of the address.
+                    streetNumber:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: The street number of the address.
+                    additionalInformation:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: Optional additional address information.
+      responses:
+        '201':
+          description: Cardholder is in creation process, wait for the callback to use it.
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/paths/~1cardholders/get/responses/200/content/application~1json/schema/properties/data/items/allOf/0'
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /cardholders/subscription:
+    post:
+      summary: 'Callback: Add/Update'
+      description: Subscribe to callbacks for this entity or change an existing callback.
+      tags:
+      - Cardholders
+      operationId: create-cardholder-subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                callbackUrl:
+                  type: string
+                  format: uri
+                  example: https://myserver.com/send/callback/here
+                  description: The URL to send the callback to. Must be a valid and reachable URL. We do some basic validation to ensure the URL is syntactically correct and reachable for Pliant. Only HTTPS URLs are supported.
+                eventTypes:
+                  type: array
+                  description: The event types to subscribe to.
+                  items:
+                    type: string
+                    enum:
+                    - CARDHOLDER_CREATED
+                    - CARDHOLDER_DATA_CHANGED
+                    - CARDHOLDER_DEACTIVATED
+                    - CARDHOLDER_INVITED
+                    - CARDHOLDER_INVITED_NEED_ACTIVATION
+                    - CARDHOLDER_INVITED_NEED_REGISTRATION
+                    - CARDHOLDER_REGISTERED
+                    - CARDHOLDER_LEGITIMATION_STATUS_CHANGED
+              required:
+              - callbackUrl
+              - eventTypes
+      responses:
+        '201':
+          description: Created
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+      callbacks:
+        cardholderUpdated:
+          '{$request.body#/callbackUrl}':
+            post:
+              parameters:
+              - in: header
+                name: X-Organization-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the organization this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Partner-Organization-Id
+                schema:
+                  type: string
+                  description: 'Filled, if the value `partnerOrganizationId` is [set](/reference/update-organization) by the partner on the organization itself. Referencing the organization identifier of the partner. Example value: `abc123`.'
+              - in: header
+                name: X-Payment-Program-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the payment program this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Callback-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'A unique identifier for this callback. Can be used to deduplicate callbacks to achieve idempotent behavior. See [guides](/docs/callbacks) for more details. Example value: `12a03093-eaad-4ae5-9d8d-42e7f6f8b7c6`.'
+              - in: header
+                name: X-Callback-Created-At
+                schema:
+                  type: string
+                  format: date-time
+                  description: 'The date and time when the callback was created. Can be used to reorder callbacks. See [guides](/docs/callbacks) for more details. Example value: `2024-03-15T15:55:58.623375258Z`.'
+              requestBody:
+                content:
+                  application/json:
+                    schema:
+                      allOf:
+                      - $ref: '#/paths/~1cards~1subscription/post/callbacks/cardUpdated/{$request.body#~1callbackUrl}/post/requestBody/content/application~1json/schema/allOf/0'
+                      - type: object
+                        required:
+                        - organizationId
+                        - cardholderId
+                        - status
+                        properties:
+                          organizationId:
+                            type: string
+                            format: uuid
+                            description: The ID of the organization.
+                          cardholderId:
+                            type: string
+                            format: uuid
+                            description: The ID of the cardholder.
+                          status:
+                            type: string
+                            description: The status of the cardholder.
+                            enum:
+                            - INVITED
+                            - ACTIVE
+                            - DEACTIVATED
+                          inviteLink:
+                            type: string
+                            description: Invite link that lead the user to the "Set password" page in Pliant apps. Only present for callback types `CARDHOLDER_CREATED`, `CARDHOLDER_INVITED_NEED_ACTIVATION`, `CARDHOLDER_INVITED_NEED_REGISTRATION` & `CARDHOLDER_INVITED`
+                            example: https://app.dev.infinnitytest.com/membership-activation/3fa85f64-5717-4562-b3fc-2c963f66afa6
+                          dateOfBirth:
+                            type:
+                            - string
+                            - 'null'
+                            format: date
+                            description: The date-of-birth of the cardholder.
+                          nationality:
+                            type:
+                            - string
+                            - 'null'
+                            description: The nationality of the cardholder (ISO 3166-1 alpha-2).
+                          personalAddress:
+                            type:
+                            - object
+                            - 'null'
+                            description: The personal address of the cardholder.
+                            properties:
+                              country:
+                                type:
+                                - string
+                                - 'null'
+                                description: The country of the address in ISO 3166-1 alpha-2 notation.
+                              city:
+                                type:
+                                - string
+                                - 'null'
+                                description: The city of the address.
+                              postalCode:
+                                type:
+                                - string
+                                - 'null'
+                                description: The postal code of the address.
+                              streetName:
+                                type:
+                                - string
+                                - 'null'
+                                description: The street name of the address.
+                              streetNumber:
+                                type:
+                                - string
+                                - 'null'
+                                description: The street number of the address.
+                              additionalInformation:
+                                type:
+                                - string
+                                - 'null'
+                                description: Optional additional address information.
+                          deliveryAddress:
+                            type:
+                            - object
+                            - 'null'
+                            description: The delivery address of the cardholder.
+                            properties:
+                              country:
+                                type:
+                                - string
+                                - 'null'
+                                description: The country of the address in ISO 3166-1 alpha-2 notation.
+                              city:
+                                type:
+                                - string
+                                - 'null'
+                                description: The city of the address.
+                              postalCode:
+                                type:
+                                - string
+                                - 'null'
+                                description: The postal code of the address.
+                              streetName:
+                                type:
+                                - string
+                                - 'null'
+                                description: The street name of the address.
+                              streetNumber:
+                                type:
+                                - string
+                                - 'null'
+                                description: The street number of the address.
+                              additionalInformation:
+                                type:
+                                - string
+                                - 'null'
+                                description: Optional additional address information.
+              responses:
+                '200':
+                  description: We expect the partner to return a HTTP 200 status code if the callback was successfully received. On 4xx and 5xx status codes, we will [retry](/docs/callbacks#retries) the callback.
+        cardholderLegitimationStatusChanged:
+          '{$request.body#/callbackUrl}':
+            post:
+              parameters:
+              - $ref: '#/paths/~1cards~1subscription/post/callbacks/cardReassigned/{$request.body#~1callbackUrl}/post/parameters/0'
+              - $ref: '#/paths/~1cards~1subscription/post/callbacks/cardReassigned/{$request.body#~1callbackUrl}/post/parameters/1'
+              - $ref: '#/paths/~1cards~1subscription/post/callbacks/cardReassigned/{$request.body#~1callbackUrl}/post/parameters/2'
+              - $ref: '#/paths/~1cards~1subscription/post/callbacks/cardReassigned/{$request.body#~1callbackUrl}/post/parameters/3'
+              - $ref: '#/paths/~1cards~1subscription/post/callbacks/cardReassigned/{$request.body#~1callbackUrl}/post/parameters/4'
+              requestBody:
+                content:
+                  application/json:
+                    schema:
+                      allOf:
+                      - $ref: '#/paths/~1cards~1subscription/post/callbacks/cardUpdated/{$request.body#~1callbackUrl}/post/requestBody/content/application~1json/schema/allOf/0'
+                      - type: object
+                        required:
+                        - organizationId
+                        - cardholderId
+                        - identityVerificationId
+                        - legitimationStatus
+                        properties:
+                          organizationId:
+                            type: string
+                            format: uuid
+                            description: The ID of the organization.
+                          cardholderId:
+                            type: string
+                            format: uuid
+                            description: The ID of the cardholder.
+                          identityVerificationId:
+                            type: string
+                            format: uuid
+                            description: The ID of the identity verification record.
+                          legitimationStatus:
+                            type: string
+                            description: 'The legitimation status of the cardholder. Known values: `ONGOING`, `COMPLETED`, `FRAUD`, `CANCELLED`.'
+              responses:
+                '200':
+                  description: We expect the partner to return a HTTP 200 status code if the callback was successfully received. On 4xx and 5xx status codes, we will [retry](/docs/callbacks#retries) the callback.
+    delete:
+      summary: 'Callback: Remove'
+      description: Remove a callback subscription for this entity.
+      tags:
+      - Cardholders
+      operationId: remove-cardholder-subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                eventTypes:
+                  type: array
+                  description: The event types to unsubscribe from.
+                  items:
+                    type: string
+                    enum:
+                    - CARDHOLDER_CREATED
+                    - CARDHOLDER_DATA_CHANGED
+                    - CARDHOLDER_DEACTIVATED
+                    - CARDHOLDER_INVITED
+                    - CARDHOLDER_INVITED_NEED_ACTIVATION
+                    - CARDHOLDER_INVITED_NEED_REGISTRATION
+                    - CARDHOLDER_REGISTERED
+                    - CARDHOLDER_LEGITIMATION_STATUS_CHANGED
+              required:
+              - eventTypes
+      responses:
+        '200':
+          description: Ok
+  /cardholders/{cardholderId}:
+    get:
+      summary: Cardholder Details
+      description: Returns the details of a cardholder by its unique identifier.
+      tags:
+      - Cardholders
+      operationId: get-cardholder-details
+      parameters:
+      - name: cardholderId
+        in: path
+        required: true
+        description: The unique identifier of the cardholder.
+        schema:
+          type: string
+          format: uuid
+      - name: organizationId
+        in: query
+        required: true
+        description: The unique identifier of the organization.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/paths/~1cardholders~1{cardholderId}/patch/responses/200/content/application~1json/schema/allOf/0'
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+    patch:
+      summary: Update Cardholder
+      description: Updates cardholder details.
+      tags:
+      - Cardholders
+      operationId: update-cardholders
+      parameters:
+      - name: cardholderId
+        in: path
+        required: true
+        description: The unique identifier of the cardholder.
+        schema:
+          type: string
+          format: uuid
+      - name: organizationId
+        in: query
+        required: true
+        description: The unique identifier of the organization.
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - firstName
+              - lastName
+              - email
+              - phoneNumber
+              - language
+              - role
+              properties:
+                salutation:
+                  type: string
+                  enum:
+                  - MR
+                  - MRS
+                  description: Used mainly for email communication.
+                firstName:
+                  type: string
+                  description: 'The first name of the cardholder. This will be printed on credit cards as the cardholder. It is important to note, that only the following characters are allowed for issuing cards: `A-Z`, `a-z`, `0-9`, `äöüÄÖÜ.-` The combined length of first name and last name must not exceed 24 characters. One additional character is reserved for the space inserted between them when displayed on the card (25 characters in total). The full legal first name must be provided, since it is used for sanctions screening. Initial-only values are rejected: a single letter (e.g. `K`), a single letter followed by a period (e.g. `K.`) and sequences of initials with or without periods (e.g. `J R`, `J. R.`). Short names with two or more letters (e.g. `Li`, `Ng`, `Wu`, `Xu`) are valid. A violation results in a `400 Bad Request` with the error code `INCOMPLETE_LEGAL_NAME`.'
+                lastName:
+                  type: string
+                  description: 'The last name of the cardholder. This will be printed on credit cards as the cardholder. It is important to note, that only the following characters are allowed for issuing cards: `A-Z`, `a-z`, `0-9`, `äöüÄÖÜ.-` The combined length of first name and last name must not exceed 24 characters. One additional character is reserved for the space inserted between them when displayed on the card (25 characters in total). The full legal last name must be provided, since it is used for sanctions screening. Initial-only values are rejected: a single letter (e.g. `K`), a single letter followed by a period (e.g. `K.`) and sequences of initials with or without periods (e.g. `J R`, `J. R.`). Short names with two or more letters (e.g. `Li`, `Ng`, `Wu`, `Xu`) are valid. A violation results in a `400 Bad Request` with the error code `INCOMPLETE_LEGAL_NAME`.'
+                email:
+                  type: string
+                  maxLength: 50
+                  description: The email address of the cardholder. This will be used for email communication. If the email address is updated for [cardholder](/docs/cardholder-entity) that has been invited via API or Pliant apps, an email notification is triggered.
+                phoneNumber:
+                  type: string
+                  maxLength: 16
+                  pattern: ^\+[0-9]{8,15}$
+                  description: The phone number must start with `+` followed by 8 to 15 numbers, e.g. `+49123456789`. If the phone number of a [cardholder](/docs/cardholder-entity) is updated, who was invited via Pliant and not the API, the phone number is not changed immediately, but the [cardholder](/docs/cardholder-entity) will receive an email instead with instructions to re-login to Pliant's web app and to update the phone number there. This is necessary as a security precaution, since the phone number is a critical part of the 3DS authentication process for handling purchases with a credit card.
+                language:
+                  type: string
+                  enum:
+                  - en
+                  - de
+                  - es
+                  - fi
+                  - fr
+                  - it
+                  - pt
+                  - nl
+                  - et
+                  - el
+                  - lv
+                  - lt
+                  - sk
+                  - sl
+                  - pl
+                  - hu
+                  description: Used for setting the language in Pliant apps as well as for email communication.
+                locale:
+                  type:
+                  - string
+                  - 'null'
+                  enum:
+                  - en-US
+                  example: en-US
+                  description: Optional locale. When provided, its language subtag must match `language`.
+                isOwner:
+                  type: boolean
+                  description: If `true`, the [cardholder](/docs/cardholder-entity) is the owner of the organization. The owner is allowed to administer all settings of the organization on the Pliant platform. If `false`, the [cardholder](/docs/cardholder-entity) is a plain [cardholder](/docs/cardholder-entity) with limited rights on the Pliant platform. Only works if [cardholder](/docs/cardholder-entity) was invited via API or Pliant apps.
+                dateOfBirth:
+                  type:
+                  - string
+                  - 'null'
+                  format: date
+                  description: The date-of-birth of the cardholder. Depending on the compliance configuration of your payment program, this field may be required. Omitting it in those cases will result in a 400 Bad Request.
+                nationality:
+                  type:
+                  - string
+                  - 'null'
+                  description: The nationality of the cardholder (ISO 3166-1 alpha-2). Depending on the compliance configuration of your payment program, this field may be required. Omitting it in those cases will result in a 400 Bad Request.
+                personalAddress:
+                  type:
+                  - object
+                  - 'null'
+                  description: The personal address of the cardholder.
+                  properties:
+                    country:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 2
+                      description: The country of the address in ISO 3166-1 alpha-2 notation.
+                    state:
+                      type:
+                      - string
+                      - 'null'
+                      minLength: 2
+                      maxLength: 2
+                      pattern: ^[A-Z]{2}$
+                      description: The US state (e.g. `CA`, `NY`). Only applicable when `country` is `US`.
+                    city:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: The city of the address.
+                    postalCode:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 10
+                      description: The postal code of the address. Must match the country-specific format (e.g. 5 digits for `DE`/`FR`/`ES`, 4 digits for `AT`/`BE`). Both `postalCode` and `country` must be provided together.
+                    streetName:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: The street name of the address.
+                    streetNumber:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: The street number of the address.
+                    additionalInformation:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: Optional additional address information.
+                deliveryAddress:
+                  type:
+                  - object
+                  - 'null'
+                  description: The delivery address of the cardholder.
+                  properties:
+                    country:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 2
+                      description: The country of the address in ISO 3166-1 alpha-2 notation.
+                    state:
+                      type:
+                      - string
+                      - 'null'
+                      minLength: 2
+                      maxLength: 2
+                      pattern: ^[A-Z]{2}$
+                      description: The US state (e.g. `CA`, `NY`). Only applicable when `country` is `US`.
+                    city:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: The city of the address.
+                    postalCode:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 10
+                      description: The postal code of the address. Must match the country-specific format (e.g. 5 digits for `DE`/`FR`/`ES`, 4 digits for `AT`/`BE`). Both `postalCode` and `country` must be provided together.
+                    streetName:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: The street name of the address.
+                    streetNumber:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: The street number of the address.
+                    additionalInformation:
+                      type:
+                      - string
+                      - 'null'
+                      maxLength: 50
+                      description: Optional additional address information.
+      responses:
+        '200':
+          description: Cardholder successfully updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                - type: object
+                  properties:
+                    cardholderId:
+                      type: string
+                      format: uuid
+                      description: The unique identifier of the [cardholder](/docs/cardholder-entity).
+                    salutation:
+                      type:
+                      - string
+                      - 'null'
+                      description: The salutation of the cardholder. Mainly used for email communication.
+                      enum:
+                      - MR
+                      - MRS
+                    firstName:
+                      type: string
+                      description: 'The first name of the cardholder. This will be printed on credit cards as the cardholder. It is important to note, that only the following characters are allowed for issuing cards: `A-Z`, `a-z`, `0-9`, `äöüÄÖÜ.-` The combined length of first name and last name must not exceed 24 characters. One additional character is reserved for the space inserted between them when displayed on the card (25 characters in total).'
+                    lastName:
+                      type: string
+                      description: 'The last name of the cardholder. This will be printed on credit cards as the cardholder. It is important to note, that only the following characters are allowed for issuing cards: `A-Z`, `a-z`, `0-9`, `äöüÄÖÜ.-` The combined length of first name and last name must not exceed 24 characters. One additional character is reserved for the space inserted between them when displayed on the card (25 characters in total).'
+                    email:
+                      type: string
+                      description: The email address of the cardholder. This will be used for email communication.
+                    phoneNumber:
+                      type: string
+                      description: Phone number must start with `+` followed by 8 to 15 numbers, e.g. `+49123456789`. Important! When changing the phone number, the new phone number must be verified by the cardholder within Pliant, if the cardholder has access to Pliant web app. If the cardholder has no access to Pliant, the phone number is changed without an additional verification, but with a short delay of some seconds. You will receive a callback once the cardholder is fully updated.
+                    language:
+                      type: string
+                      enum:
+                      - en
+                      - de
+                      - es
+                      - fi
+                      - fr
+                      - it
+                      - pt
+                      - nl
+                      - et
+                      - el
+                      - lv
+                      - lt
+                      - sk
+                      - sl
+                      - pl
+                      - hu
+                      description: Used for setting the language in Pliant apps as well as for email communication.
+                    locale:
+                      type:
+                      - string
+                      - 'null'
+                      enum:
+                      - en-US
+                      example: en-US
+                      description: Optional locale. When provided, its language subtag must match `language`.
+                    eligibleForPlatformFeeCards:
+                      type: boolean
+                      description: Describes if the cardholder is eligible to have [platform fee cards](/reference/reassign-platform-fee-card) assigned to them. Note, that this field depends on the organization. The combination of `cardholderId` and `organizationId` defines if this field is `true` or `false`.
+                    isOwner:
+                      type: boolean
+                      description: If `true`, the [cardholder](/docs/cardholder-entity) is the owner of the organization. The owner is allowed to administer all settings of the organization on the Pliant platform. If `false`, the [cardholder](/docs/cardholder-entity) is a plain [cardholder](/docs/cardholder-entity) with limited rights on the Pliant platform.
+                    status:
+                      type: string
+                      description: The status of the cardholder.
+                      enum:
+                      - INVITED
+                      - ACTIVE
+                      - DEACTIVATED
+                    isEmbedded:
+                      type: boolean
+                      description: Describes if the [cardholder](/docs/cardholder-entity) is embedded with a partner and thus can only be managed via the API. If `true`, it can only be managed via API, if `false`, if can be managed via UI as well and the [cardholder](/docs/cardholder-entity) can also log into Pliant web app.
+                    dateOfBirth:
+                      type:
+                      - string
+                      - 'null'
+                      format: date
+                      description: The date-of-birth of the cardholder.
+                    nationality:
+                      type:
+                      - string
+                      - 'null'
+                      description: The nationality of the cardholder (ISO 3166-1 alpha-2).
+                    personalAddress:
+                      type:
+                      - object
+                      - 'null'
+                      description: The personal address of the cardholder.
+                      properties:
+                        country:
+                          type:
+                          - string
+                          - 'null'
+                          description: The country of the address in ISO 3166-1 alpha-2 notation.
+                        city:
+                          type:
+                          - string
+                          - 'null'
+                          description: The city of the address.
+                        postalCode:
+                          type:
+                          - string
+                          - 'null'
+                          description: The postal code of the address.
+                        streetName:
+                          type:
+                          - string
+                          - 'null'
+                          description: The street name of the address.
+                        streetNumber:
+                          type:
+                          - string
+                          - 'null'
+                          description: The street number of the address.
+                        additionalInformation:
+                          type:
+                          - string
+                          - 'null'
+                          description: Optional additional address information.
+                    deliveryAddress:
+                      type:
+                      - object
+                      - 'null'
+                      description: The delivery address of the cardholder.
+                      properties:
+                        country:
+                          type:
+                          - string
+                          - 'null'
+                          description: The country of the address in ISO 3166-1 alpha-2 notation.
+                        city:
+                          type:
+                          - string
+                          - 'null'
+                          description: The city of the address.
+                        postalCode:
+                          type:
+                          - string
+                          - 'null'
+                          description: The postal code of the address.
+                        streetName:
+                          type:
+                          - string
+                          - 'null'
+                          description: The street name of the address.
+                        streetNumber:
+                          type:
+                          - string
+                          - 'null'
+                          description: The street number of the address.
+                        additionalInformation:
+                          type:
+                          - string
+                          - 'null'
+                          description: Optional additional address information.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+    delete:
+      summary: Deactivate Cardholder
+      description: Deactivate a cardholder and terminate all active cards of that cardholder. You can optionally specify that the e-mail address of the cardholder should be modified by adding a suffix to it. This allows to re-invite the same e-mail address to a new cardholder.
+      tags:
+      - Cardholders
+      operationId: deactivate-cardholder
+      parameters:
+      - name: cardholderId
+        in: path
+        required: true
+        description: The unique identifier of the cardholder.
+        schema:
+          type: string
+          format: uuid
+      - name: organizationId
+        in: query
+        required: true
+        description: The unique identifier of the organization.
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                suffix:
+                  type: string
+                  description: The suffix to add to the e-mail address of the cardholder. If `null` is provided, the e-mail address will not be modified.
+                  example: -deactivated
+      responses:
+        '204':
+          description: Cardholder successfully deleted!
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: This API uses oAuth2 with client credentials flow to [obtain the Bearer Token](/docs/authenticated-api-usage).
+      bearerFormat: JWT
+x-provenance:
+  method: searched
+  source: https://customer-api.getpliant.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://customer-api.getpliant.com/reference/activate-physical-card.md
+  - https://customer-api.getpliant.com/reference/assign-project-team.md
+  - https://customer-api.getpliant.com/reference/assign-to-team.md
+  - https://customer-api.getpliant.com/reference/bulk-upsert-subscriptions.md
+  - https://customer-api.getpliant.com/reference/card-pan-and-cvv-pci-vault.md
+  - https://customer-api.getpliant.com/reference/card-pan-tokenized-from-pci-proxy.md
+  - https://customer-api.getpliant.com/reference/claim-card-as-copilot.md
+  - https://customer-api.getpliant.com/reference/create-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-transfer.md
+  - https://customer-api.getpliant.com/reference/create-card-account.md
+  - https://customer-api.getpliant.com/reference/create-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-subscription.md
+  - https://customer-api.getpliant.com/reference/create-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/create-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/create-custom-field.md
+  - https://customer-api.getpliant.com/reference/create-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/create-project.md
+  - https://customer-api.getpliant.com/reference/create-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/create-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/create-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/create-team.md
+  - https://customer-api.getpliant.com/reference/create-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/deactivate-card-account.md
+  - https://customer-api.getpliant.com/reference/deactivate-cardholder.md
+  - https://customer-api.getpliant.com/reference/deactivate-team.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field.md
+  - https://customer-api.getpliant.com/reference/delete-project.md
+  - https://customer-api.getpliant.com/reference/delete-receipt.md
+  - https://customer-api.getpliant.com/reference/delete-subscription.md
+  - https://customer-api.getpliant.com/reference/delete-team.md
+  - https://customer-api.getpliant.com/reference/delete-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/generate-test-transactions-in-sandbox.md
+  - https://customer-api.getpliant.com/reference/get-account-entries.md
+  - https://customer-api.getpliant.com/reference/get-accounting-transactions-batch.md
+  - https://customer-api.getpliant.com/reference/get-available-cards.md
+  - https://customer-api.getpliant.com/reference/get-callback-details.md
+  - https://customer-api.getpliant.com/reference/get-callback-log.md
+  - https://customer-api.getpliant.com/reference/get-callback-subscriptions.md
+  - https://customer-api.getpliant.com/reference/get-callback.md
+  - https://customer-api.getpliant.com/reference/get-card-account-details.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts-available-currencies.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts.md
+  - https://customer-api.getpliant.com/reference/get-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/get-card-pin.md
+  - https://customer-api.getpliant.com/reference/get-cardholder-details.md
+  - https://customer-api.getpliant.com/reference/get-cards.md
+  - https://customer-api.getpliant.com/reference/get-custom-field-options.md
+  - https://customer-api.getpliant.com/reference/get-custom-fields.md
+  - https://customer-api.getpliant.com/reference/get-multiple-card-details.md
+  - https://customer-api.getpliant.com/reference/get-organization-details.md
+  - https://customer-api.getpliant.com/reference/get-otp-for-pci-widget.md
+  - https://customer-api.getpliant.com/reference/get-payments-detail.md
+  - https://customer-api.getpliant.com/reference/get-payments.md
+  - https://customer-api.getpliant.com/reference/get-projects.md
+  - https://customer-api.getpliant.com/reference/get-receipt-automatcher-status.md
+  - https://customer-api.getpliant.com/reference/get-receipt-detail.md
+  - https://customer-api.getpliant.com/reference/get-receipts.md
+  - https://customer-api.getpliant.com/reference/get-single-card-details.md
+  - https://customer-api.getpliant.com/reference/get-statement-csv.md
+  - https://customer-api.getpliant.com/reference/get-statement-detail.md
+  - https://customer-api.getpliant.com/reference/get-statementpdf.md
+  - https://customer-api.getpliant.com/reference/get-statements.md
+  - https://customer-api.getpliant.com/reference/get-teams.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail-batch.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail.md
+  - https://customer-api.getpliant.com/reference/get-transactions.md
+  - https://customer-api.getpliant.com/reference/invite-cardholders.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant-with-pci.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant.md
+  - https://customer-api.getpliant.com/reference/issue-card.md
+  - https://customer-api.getpliant.com/reference/list-cardholders.md
+  - https://customer-api.getpliant.com/reference/list-organizations.md
+  - https://customer-api.getpliant.com/reference/load-cards-batch.md
+  - https://customer-api.getpliant.com/reference/lock-card.md
+  - https://customer-api.getpliant.com/reference/metadata-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/receipt-as-merged-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-as-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-original.md
+  - https://customer-api.getpliant.com/reference/receipt-thumbnail.md
+  - https://customer-api.getpliant.com/reference/register-cardholders.md
+  - https://customer-api.getpliant.com/reference/remove-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cards-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/replace-card.md
+  - https://customer-api.getpliant.com/reference/resend-callbacks.md
+  - https://customer-api.getpliant.com/reference/search-callbacks.md
+  - https://customer-api.getpliant.com/reference/simulate-prefund-payment.md
+  - https://customer-api.getpliant.com/reference/simulate-transaction-status-transition.md
+  - https://customer-api.getpliant.com/reference/terminate-card.md
+  - https://customer-api.getpliant.com/reference/unassign-from-team.md
+  - https://customer-api.getpliant.com/reference/unassign-project-team.md
+  - https://customer-api.getpliant.com/reference/unlock-card.md
+  - https://customer-api.getpliant.com/reference/update-card-account.md
+  - https://customer-api.getpliant.com/reference/update-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/update-card-copilots.md
+  - https://customer-api.getpliant.com/reference/update-card-label.md
+  - https://customer-api.getpliant.com/reference/update-card-limit.md
+  - https://customer-api.getpliant.com/reference/update-card-validity-period.md
+  - https://customer-api.getpliant.com/reference/update-card.md
+  - https://customer-api.getpliant.com/reference/update-cardholders.md
+  - https://customer-api.getpliant.com/reference/update-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/update-custom-field.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-accounting-transaction.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-card.md
+  - https://customer-api.getpliant.com/reference/update-project.md
+  - https://customer-api.getpliant.com/reference/update-team.md
+  - https://customer-api.getpliant.com/reference/update-transaction-category.md
+  - https://customer-api.getpliant.com/reference/update-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status-batch.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status.md
+  - https://customer-api.getpliant.com/reference/update-transaction-receipt-upload.md
+  - https://customer-api.getpliant.com/reference/upload-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/upload-receipt.md
+  merge:
+    pages: 128
+    deduped: 452
+    conflicts_kept_first: 0

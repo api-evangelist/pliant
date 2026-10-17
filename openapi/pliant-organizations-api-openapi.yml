@@ -1,0 +1,631 @@
+openapi: 3.2.0
+info:
+  contact:
+    name: API Support
+    email: support@getpliant.com
+    url: https://www.getpliant.com
+  title: Pliant Customer Organizations API
+  description: Pliant Customer API
+  version: 2.1.0
+  license:
+    name: MIT
+    url: https://opensource.org/license/MIT
+servers:
+- url: https://partner-api.getpliant.com/api
+  description: Pliant Production Server
+- url: https://sandbox.partner-api.getpliant.com/api
+  description: Pliant Sandbox Server
+- url: https://pci-api.getpliant.com
+  description: PCI Vault Production Server
+- url: https://pci-sandbox.partner-api.getpliant.com
+  description: PCI Vault Sandbox Server
+security:
+- bearerAuth: []
+tags:
+- name: Organizations
+  description: This tag is for operations related to organizations
+paths:
+  /organizations:
+    get:
+      summary: List Organizations
+      description: Returns a list of organizations. You can filter by status or VAT ID to find specific organizations. You can use the `limit`, `page`, `sortBy` and `sortDirection` parameters to filter and sort the results.
+      tags:
+      - Organizations
+      operationId: list-organizations
+      parameters:
+      - name: status
+        in: query
+        description: The status of the organizations to filter by.
+        schema:
+          type: string
+          description: The status of the organization, see [our guides](/docs/organization-entity) for more details.
+          enum:
+          - ONBOARDING_STARTED
+          - ONBOARDING_RISK_AND_COMPLIANCE
+          - ONBOARDING_MANDATES_AND_TERMS
+          - ACTIVE
+          - DEACTIVATED
+          - CANCELLED
+          example: ONBOARDING_STARTED
+      - name: vatId
+        in: query
+        description: The VAT ID of the organization to filter by.
+        schema:
+          type: string
+      - name: limit
+        in: query
+        description: The maximum number of items to return per page. The default value if not provided is 100, the maximum allowed value is 1000.
+        schema:
+          type: integer
+      - name: page
+        in: query
+        description: The page number to return, starting with 0, this counts up to the total number of pages. The total number of pages is determined by the total number of records divided by the limit.
+        schema:
+          type: integer
+      - name: sortBy
+        in: query
+        description: The field to sort by.
+        schema:
+          type: string
+          enum:
+          - id
+          - name
+          - status
+          - createdAt
+      - name: sortDirection
+        in: query
+        description: The direction to sort by.
+        schema:
+          type: string
+          enum:
+          - ASC
+          - DESC
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        organizationId:
+                          type: string
+                          format: uuid
+                          description: The id of the organization.
+                        name:
+                          type: string
+                          description: The name of the organization.
+                        status:
+                          $ref: '#/paths/~1organizations/get/parameters/0/schema'
+                        vatId:
+                          type:
+                          - string
+                          - 'null'
+                          description: The VAT ID of the organization, if available.
+                        cardAccounts:
+                          $ref: '#/paths/~1organizations~1{organizationId}/get/responses/200/content/application~1json/schema/properties/cardAccounts'
+                        paymentProgramId:
+                          type: string
+                          format: uuid
+                          description: The id of the payment program this organization belongs to.
+                  hasNextPage:
+                    type: boolean
+                    description: Indicates whether there is a next page available.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /organizations/{organizationId}:
+    get:
+      summary: Organization Details
+      description: Returns a single organization by its ID
+      tags:
+      - Organizations
+      operationId: get-organization-details
+      parameters:
+      - name: organizationId
+        in: path
+        required: true
+        description: The unique identifier of the organization.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  organizationId:
+                    type: string
+                    format: uuid
+                    description: The unique identifier of the organization.
+                  name:
+                    type: string
+                    description: The legal name of the organization.
+                  status:
+                    $ref: '#/paths/~1organizations/get/parameters/0/schema'
+                  syncType:
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - FULL
+                    - PARTIAL
+                    description: The sync type of the organization, will always be `FULL` for now.
+                  integrationType:
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - PARTNER
+                    description: The integration type of the organization, will always be `PARTNER`.
+                  creditLimit:
+                    type: object
+                    description: The credit limit for the organization, if applicable. For prefund organizations this value is always 0 EUR. See our [guides](/docs/organization-entity#account-limits-and-balance) for more details regarding limits and balances.
+                    properties:
+                      value:
+                        type: number
+                        description: The value of the monetary amount, converted to minor units of the currency. For instance 1.00 EUR is 100 cents, thus the value here is `100`. See our [guides](/docs/monetary-values) for more details about how to handle monetary amounts.
+                      currency:
+                        type: string
+                        description: The currency of the monetary amount in ISO 4217 format, for example `EUR` for Euro or `USD` for US Dollar.
+                  availableLimit:
+                    type: object
+                    description: The available spending capacity for the organization. See our [guides](/docs/organization-entity#account-limits-and-balance) for more details regarding limits and balances.
+                    properties:
+                      value:
+                        type: number
+                        description: The value of the monetary amount, converted to minor units of the currency. For instance 1.00 EUR is 100 cents, thus the value here is `100`. See our [guides](/docs/monetary-values) for more details about how to handle monetary amounts.
+                      currency:
+                        type: string
+                        description: The currency of the monetary amount in ISO 4217 format, for example `EUR` for Euro or `USD` for US Dollar.
+                  balance:
+                    type: object
+                    description: The balance of the organization, which represents movements (positive and negative) on the account. See our [guides](/docs/organization-entity#account-limits-and-balance) for more details regarding limits and balances.
+                    properties:
+                      value:
+                        type: number
+                        description: The value of the monetary amount, converted to minor units of the currency. For instance 1.00 EUR is 100 cents, thus the value here is `100`. See our [guides](/docs/monetary-values) for more details about how to handle monetary amounts.
+                      currency:
+                        type: string
+                        description: The currency of the monetary amount in ISO 4217 format, for example `EUR` for Euro or `USD` for US Dollar.
+                  cardsAccounts:
+                    type: array
+                    description: 'Organizations are able to define account numbers that are used when exporting data from Pliant to an accounting system (e.g. DATEV). This is optional and only used for accounting purposes. Typically this is set on card account level but we do have fallbacks on organization level.
+
+                      **Important**: The properties and values are not identifiers for the companies card accounts within Pliant. Please use the respective endpoints to gather information about the card accounts.
+
+                      '
+                    items:
+                      type: object
+                      properties:
+                        number:
+                          type:
+                          - number
+                          - 'null'
+                        type:
+                          type: string
+                          enum:
+                          - CREDITOR_ACCOUNT
+                          - PAYMENT_ACCOUNT
+                  tradeName:
+                    type:
+                    - string
+                    - 'null'
+                    description: "An organization may use a different name, e.g. for marketing purposes. In case a trade name is provided, this will be the one printed on the employees' physical cards, instead of the organization's legal name.\nThis field is only optional, as long as the legal `name` of the organization is not longer than 20 characters.\n \n**If the legal `name` is longer than 20 characters, the trade name is required:**\n  - The trade name maximum length is 20 characters, since it is printed on the physical cards.\n  - Trade name cannot be `null` or empty.\n"
+                  legalForm:
+                    type: string
+                    description: 'The legal form of the organization. Use a value for the organization''s `country` from
+
+                      [Legal forms by country](/docs/legal-forms-by-country).
+
+                      Preserve the exact spelling, capitalization, spaces, and punctuation.
+
+                      '
+                  foundationDate:
+                    type: string
+                    format: date
+                    description: The founding date of the organization in the format `DD.MM.YYYY`.
+                  country:
+                    type: string
+                    description: The country of the organization in ISO 3166-1 alpha-2 notation.
+                    minLength: 2
+                    maxLength: 2
+                  accountType:
+                    type: string
+                    deprecated: true
+                    description: 'Replaced by `cardAccount.accountType`, see [API endpoint](./get-card-accounts). This field now shows the account type of the default card account of this organization. Note: a `CREDIT` card account can also top up their balance with a one-time prefund payment. This does not change the `accountType`, but just shows up as a bigger `availableLimit`.'
+                    enum:
+                    - CREDIT
+                    - PREFUNDED
+                  partnersOrganizationId:
+                    type:
+                    - string
+                    - 'null'
+                    description: Optional field, referencing the id used by the partner to identify this organization.
+                    deprecated: true
+                  partnerOrganizationId:
+                    type:
+                    - string
+                    - 'null'
+                    description: Optional field, referencing the id used by the partner to identify this organization.
+                  paymentFrequency:
+                    type: string
+                    deprecated: true
+                    description: Replaced by `cardAccount.paymentFrequency`, see [API endpoint](./get-card-accounts). This field now shows the payment frequency of the default card account of this organization.
+                    enum:
+                    - DAILY
+                    - WEEKLY
+                    - BI_WEEKLY
+                    - MONTHLY
+                    - PREFUNDED
+                  nationalRegisterCourt:
+                    type: string
+                    description: The national register court of the organization.
+                  nationalRegisterId:
+                    type:
+                    - string
+                    - 'null'
+                    description: The national register id of the organization.
+                  nationalRegisterType:
+                    type:
+                    - string
+                    - 'null'
+                    description: The national register type of the organization.
+                  tradeRegisterNumber:
+                    type: string
+                    description: The trade register number of the organization.
+                  vatId:
+                    type:
+                    - string
+                    - 'null'
+                    description: The VAT ID of the organization, if available.
+                  billingEmail:
+                    type:
+                    - string
+                    - 'null'
+                    description: The billing email of the organization.
+                  billingAddress:
+                    type: object
+                    description: The billing address of the organization.
+                    properties:
+                      id:
+                        type: string
+                        description: The unique identifier of the address.
+                      type:
+                        type: string
+                        description: The type of the address, here always `BILLING`.
+                        enum:
+                        - BILLING
+                        - DELIVERY
+                      country:
+                        type:
+                        - string
+                        - 'null'
+                        description: The country of the address in ISO 3166-1 alpha-2 notation. Might be `null` for non-active organizations, but is set for active organizations.
+                        minLength: 2
+                        maxLength: 2
+                      city:
+                        type:
+                        - string
+                        - 'null'
+                        description: The city of the address. Might be `null` for non-active organizations, but is set for active organizations.
+                      postalCode:
+                        type:
+                        - string
+                        - 'null'
+                        description: The postal code of the address. Might be `null` for non-active organizations, but is set for active organizations.
+                      streetFull:
+                        type:
+                        - string
+                        - 'null'
+                        description: The full street name of the address. Might be `null` for non-active organizations, but is set for active organizations.
+                      streetName:
+                        type:
+                        - string
+                        - 'null'
+                        description: The street name of the address. Might be `null` for non-active organizations, but is set for active organizations.
+                      streetNumber:
+                        type:
+                        - string
+                        - 'null'
+                        description: The street number of the address. Might be `null` for non-active organizations, but is set for active organizations.
+                      streetAdditional:
+                        type:
+                        - string
+                        - 'null'
+                        description: Optional additional street information.
+                  deliveryAddress:
+                    type:
+                    - object
+                    - 'null'
+                    description: The delivery address of the organization.
+                    properties:
+                      id:
+                        type: string
+                        description: The unique identifier of the address.
+                      type:
+                        type: string
+                        description: The type of the address, here always `DELIVERY`.
+                        enum:
+                        - BILLING
+                        - DELIVERY
+                      country:
+                        type:
+                        - string
+                        - 'null'
+                        description: The country of the address in ISO 3166-1 alpha-2 notation. Might be `null` for non-active organizations, but is set for active organizations.
+                        minLength: 2
+                        maxLength: 2
+                      city:
+                        type:
+                        - string
+                        - 'null'
+                        description: The city of the address. Might be `null` for non-active organizations, but is set for active organizations.
+                      postalCode:
+                        type:
+                        - string
+                        - 'null'
+                        description: The postal code of the address. Might be `null` for non-active organizations, but is set for active organizations.
+                      streetFull:
+                        type:
+                        - string
+                        - 'null'
+                        description: The full street name of the address. Might be `null` for non-active organizations, but is set for active organizations.
+                      streetName:
+                        type:
+                        - string
+                        - 'null'
+                        description: The street name of the address. Might be `null` for non-active organizations, but is set for active organizations.
+                      streetNumber:
+                        type:
+                        - string
+                        - 'null'
+                        description: The street number of the address. Might be `null` for non-active organizations, but is set for active organizations.
+                      streetAdditional:
+                        type:
+                        - string
+                        - 'null'
+                        description: Optional additional street information.
+                  processingAccount:
+                    type: object
+                    deprecated: true
+                    description: Replaced by `cardAccount.bankAccountInformation`, see [API endpoint](./get-card-accounts). This field now shows the Pliant-internal IBAN of the default card account of this organization.
+                    properties:
+                      beneficiary:
+                        type: string
+                        description: The beneficiary of the processing account.
+                      bankName:
+                        type:
+                        - string
+                        - 'null'
+                        description: The name of the bank of the processing account.
+                      iban:
+                        type:
+                        - string
+                        - 'null'
+                        description: The IBAN of the processing account.
+                      bic:
+                        type:
+                        - string
+                        - 'null'
+                        description: The BIC of the processing account.
+                        example: SPBIDE3B
+                  isCompanyNamePrintable:
+                    type: boolean
+                    description: Determines if the company name should be printed on the card.
+                  eligibleForHybridAccount:
+                    type: boolean
+                    description: Determines if the organization is eligible for a hybrid account. A hybrid account is a credit account with additional prefund balance.
+                  cardAccounts:
+                    type: array
+                    description: The [card accounts](/docs/card-account) of the organization. At least one card account is required.
+                    items:
+                      type: object
+                      description: A [card account](/docs/card-account) of the organization.
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          description: The id of the card account.
+                        name:
+                          type: string
+                          description: The name of the card account.
+                        status:
+                          type: string
+                          description: The status of the card account. A card account with `status` `SUPERSEDED` was replaced by a successor card account and is kept for historical reasons only. Read the [card account](/reference/get-card-account-details) to find its successor (`supersededBy`).
+                          enum:
+                          - ACTIVE
+                          - PENDING
+                          - DEACTIVATED
+                          - CANCELLED
+                          - SUPERSEDED
+                        defaultAccount:
+                          type: boolean
+                          description: Indicates whether this is the default card account. There is always one active default card account.
+                  missingReceiptNotifications:
+                    type: boolean
+                    description: If set to `true`, the organization will receive notifications about missing receipts. If set to `false`, the organization will not receive notifications about missing receipts.
+                  fxFeePercentage:
+                    type:
+                    - number
+                    - 'null'
+                    description: 'The per-organization fee (as a percentage of the transaction amount) that is charged for foreign exchange transactions. This value is specific to this organization. Example: `2.1`.'
+                    format: float
+                    example: 2.1
+                    minimum: 0
+                    maximum: 100
+                  paymentProgramId:
+                    type: string
+                    format: uuid
+                    description: The id of the payment program this organization belongs to.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '404':
+          $ref: '#/paths/~1cards/post/responses/404'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: This API uses oAuth2 with client credentials flow to [obtain the Bearer Token](/docs/authenticated-api-usage).
+      bearerFormat: JWT
+x-provenance:
+  method: searched
+  source: https://customer-api.getpliant.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://customer-api.getpliant.com/reference/activate-physical-card.md
+  - https://customer-api.getpliant.com/reference/assign-project-team.md
+  - https://customer-api.getpliant.com/reference/assign-to-team.md
+  - https://customer-api.getpliant.com/reference/bulk-upsert-subscriptions.md
+  - https://customer-api.getpliant.com/reference/card-pan-and-cvv-pci-vault.md
+  - https://customer-api.getpliant.com/reference/card-pan-tokenized-from-pci-proxy.md
+  - https://customer-api.getpliant.com/reference/claim-card-as-copilot.md
+  - https://customer-api.getpliant.com/reference/create-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-transfer.md
+  - https://customer-api.getpliant.com/reference/create-card-account.md
+  - https://customer-api.getpliant.com/reference/create-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-subscription.md
+  - https://customer-api.getpliant.com/reference/create-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/create-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/create-custom-field.md
+  - https://customer-api.getpliant.com/reference/create-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/create-project.md
+  - https://customer-api.getpliant.com/reference/create-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/create-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/create-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/create-team.md
+  - https://customer-api.getpliant.com/reference/create-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/deactivate-card-account.md
+  - https://customer-api.getpliant.com/reference/deactivate-cardholder.md
+  - https://customer-api.getpliant.com/reference/deactivate-team.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field.md
+  - https://customer-api.getpliant.com/reference/delete-project.md
+  - https://customer-api.getpliant.com/reference/delete-receipt.md
+  - https://customer-api.getpliant.com/reference/delete-subscription.md
+  - https://customer-api.getpliant.com/reference/delete-team.md
+  - https://customer-api.getpliant.com/reference/delete-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/generate-test-transactions-in-sandbox.md
+  - https://customer-api.getpliant.com/reference/get-account-entries.md
+  - https://customer-api.getpliant.com/reference/get-accounting-transactions-batch.md
+  - https://customer-api.getpliant.com/reference/get-available-cards.md
+  - https://customer-api.getpliant.com/reference/get-callback-details.md
+  - https://customer-api.getpliant.com/reference/get-callback-log.md
+  - https://customer-api.getpliant.com/reference/get-callback-subscriptions.md
+  - https://customer-api.getpliant.com/reference/get-callback.md
+  - https://customer-api.getpliant.com/reference/get-card-account-details.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts-available-currencies.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts.md
+  - https://customer-api.getpliant.com/reference/get-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/get-card-pin.md
+  - https://customer-api.getpliant.com/reference/get-cardholder-details.md
+  - https://customer-api.getpliant.com/reference/get-cards.md
+  - https://customer-api.getpliant.com/reference/get-custom-field-options.md
+  - https://customer-api.getpliant.com/reference/get-custom-fields.md
+  - https://customer-api.getpliant.com/reference/get-multiple-card-details.md
+  - https://customer-api.getpliant.com/reference/get-organization-details.md
+  - https://customer-api.getpliant.com/reference/get-otp-for-pci-widget.md
+  - https://customer-api.getpliant.com/reference/get-payments-detail.md
+  - https://customer-api.getpliant.com/reference/get-payments.md
+  - https://customer-api.getpliant.com/reference/get-projects.md
+  - https://customer-api.getpliant.com/reference/get-receipt-automatcher-status.md
+  - https://customer-api.getpliant.com/reference/get-receipt-detail.md
+  - https://customer-api.getpliant.com/reference/get-receipts.md
+  - https://customer-api.getpliant.com/reference/get-single-card-details.md
+  - https://customer-api.getpliant.com/reference/get-statement-csv.md
+  - https://customer-api.getpliant.com/reference/get-statement-detail.md
+  - https://customer-api.getpliant.com/reference/get-statementpdf.md
+  - https://customer-api.getpliant.com/reference/get-statements.md
+  - https://customer-api.getpliant.com/reference/get-teams.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail-batch.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail.md
+  - https://customer-api.getpliant.com/reference/get-transactions.md
+  - https://customer-api.getpliant.com/reference/invite-cardholders.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant-with-pci.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant.md
+  - https://customer-api.getpliant.com/reference/issue-card.md
+  - https://customer-api.getpliant.com/reference/list-cardholders.md
+  - https://customer-api.getpliant.com/reference/list-organizations.md
+  - https://customer-api.getpliant.com/reference/load-cards-batch.md
+  - https://customer-api.getpliant.com/reference/lock-card.md
+  - https://customer-api.getpliant.com/reference/metadata-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/receipt-as-merged-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-as-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-original.md
+  - https://customer-api.getpliant.com/reference/receipt-thumbnail.md
+  - https://customer-api.getpliant.com/reference/register-cardholders.md
+  - https://customer-api.getpliant.com/reference/remove-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cards-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/replace-card.md
+  - https://customer-api.getpliant.com/reference/resend-callbacks.md
+  - https://customer-api.getpliant.com/reference/search-callbacks.md
+  - https://customer-api.getpliant.com/reference/simulate-prefund-payment.md
+  - https://customer-api.getpliant.com/reference/simulate-transaction-status-transition.md
+  - https://customer-api.getpliant.com/reference/terminate-card.md
+  - https://customer-api.getpliant.com/reference/unassign-from-team.md
+  - https://customer-api.getpliant.com/reference/unassign-project-team.md
+  - https://customer-api.getpliant.com/reference/unlock-card.md
+  - https://customer-api.getpliant.com/reference/update-card-account.md
+  - https://customer-api.getpliant.com/reference/update-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/update-card-copilots.md
+  - https://customer-api.getpliant.com/reference/update-card-label.md
+  - https://customer-api.getpliant.com/reference/update-card-limit.md
+  - https://customer-api.getpliant.com/reference/update-card-validity-period.md
+  - https://customer-api.getpliant.com/reference/update-card.md
+  - https://customer-api.getpliant.com/reference/update-cardholders.md
+  - https://customer-api.getpliant.com/reference/update-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/update-custom-field.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-accounting-transaction.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-card.md
+  - https://customer-api.getpliant.com/reference/update-project.md
+  - https://customer-api.getpliant.com/reference/update-team.md
+  - https://customer-api.getpliant.com/reference/update-transaction-category.md
+  - https://customer-api.getpliant.com/reference/update-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status-batch.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status.md
+  - https://customer-api.getpliant.com/reference/update-transaction-receipt-upload.md
+  - https://customer-api.getpliant.com/reference/upload-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/upload-receipt.md
+  merge:
+    pages: 128
+    deduped: 452
+    conflicts_kept_first: 0

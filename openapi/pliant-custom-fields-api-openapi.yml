@@ -1,0 +1,1031 @@
+openapi: 3.2.0
+info:
+  contact:
+    name: API Support
+    email: support@getpliant.com
+    url: https://www.getpliant.com
+  title: Pliant Customer Custom Fields API
+  description: Pliant Customer API
+  version: 2.1.0
+  license:
+    name: MIT
+    url: https://opensource.org/license/MIT
+servers:
+- url: https://partner-api.getpliant.com/api
+  description: Pliant Production Server
+- url: https://sandbox.partner-api.getpliant.com/api
+  description: Pliant Sandbox Server
+- url: https://pci-api.getpliant.com
+  description: PCI Vault Production Server
+- url: https://pci-sandbox.partner-api.getpliant.com
+  description: PCI Vault Sandbox Server
+security:
+- bearerAuth: []
+tags:
+- name: Custom Fields
+  description: This tag is for operations related to custom fields
+paths:
+  /transactions/custom-fields:
+    get:
+      summary: List Custom Fields
+      description: Returns a list of all custom fields for the given organization. Custom fields can be created by the organization via the Pliant web app or API. Those fields can be used to store additional information on transactions, e.g. an additional field needed for pre-accounting purposes, or a reference the organizations needs to reconciliation processes later in their systems. Custom fields can be set on card- or transaction-level. If set on card-level, each transaction made with this card gets a copy of the custom field values of the respective card.
+      tags:
+      - Custom Fields
+      operationId: get-custom-fields
+      parameters:
+      - name: organizationId
+        required: true
+        in: query
+        description: The unique identifier of the organization.
+        schema:
+          type: string
+          format: uuid
+      - name: limit
+        in: query
+        description: The maximum number of items to return per page. The default value if not provided is 100, the maximum allowed value is 1000.
+        schema:
+          type: integer
+      - name: page
+        in: query
+        description: The page number to return, starting with 0, this counts up to the total number of pages. The total number of pages is determined by the total number of records divided by the limit.
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          description: The id of the custom field.
+                        label:
+                          type: string
+                          description: The label of the custom field, displayed in a UI for example.
+                        description:
+                          type:
+                          - string
+                          - 'null'
+                          description: The description of the custom field, displayed in a UI for example.
+                        defaultValue:
+                          type:
+                          - string
+                          - 'null'
+                          description: The default value of the custom field, optional.
+                        type:
+                          type: string
+                          description: 'The type of the custom field.
+
+                            `TEXT` represents a custom field which can store any text value.
+
+                            `SELECT` represents a custom field which can store a fixed set of options.
+
+                            '
+                          enum:
+                          - TEXT
+                          - SELECT
+                        status:
+                          type: string
+                          description: The status of the custom field. Only an active custom field can be used.
+                          enum:
+                          - ACTIVE
+                          - INACTIVE
+                        automationType:
+                          type: string
+                          description: The automation type of the custom field. For now only `CARD` is supported. This means, that the [custom fields](/docs/custom-fields-on-transactions) default value will be copied to every transaction made with the card the field is set on.
+                          enum:
+                          - CARD
+                        mandatoryOnAutomation:
+                          type: boolean
+                          description: If set to true, this means this custom field is mandatory to be filled with a default value on the level of the automation, here `CARD`.
+                        mandatoryForExport:
+                          type: boolean
+                          description: If set to true, this means this custom field is mandatory to be filled on every transaction which should be exported with the Pliant accounting export.
+                        visibility:
+                          type: string
+                          description: 'Controls where the values of this custom field are visible.
+
+                            `ADMIN_AND_CARDHOLDER` makes the values visible to both admins and cardholders.
+
+                            `ADMIN_ONLY` makes the values visible only to admins.
+
+                            `NOWHERE` hides the values from both admins and cardholders.
+
+                            '
+                          enum:
+                          - ADMIN_AND_CARDHOLDER
+                          - ADMIN_ONLY
+                          - NOWHERE
+                        createdAt:
+                          type: string
+                          format: date-time
+                          description: The date and time the custom field was created.
+                        updatedAt:
+                          type:
+                          - string
+                          - 'null'
+                          format: date-time
+                          description: The date and time the custom field was last updated.
+                  hasNextPage:
+                    type: boolean
+                    description: Indicates whether there is a next page available.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+    post:
+      summary: Create Custom Field
+      description: Create a new custom field for the organization. Custom fields can be used to store additional information on transactions. For example, you can create a custom field to store an internal identifier, a project name, or accounting related data. Custom fields can be of type `TEXT` or `SELECT`. `TEXT` custom fields can store any text value. `SELECT` custom fields can store a fixed set of options. Each new custom field is created `ACTIVE`.
+      tags:
+      - Custom Fields
+      operationId: create-custom-field
+      parameters:
+      - name: organizationId
+        required: true
+        in: query
+        description: The unique identifier of the organization to create the custom field for.
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - label
+              - type
+              - automationType
+              - mandatoryOnAutomation
+              - mandatoryForExport
+              properties:
+                label:
+                  type: string
+                  description: The label of the custom field, displayed in the UI.
+                description:
+                  type: string
+                  description: The description of the custom field, displayed in the UI, optional.
+                defaultValue:
+                  type: string
+                  description: The default value of the custom field, optional.
+                type:
+                  type: string
+                  description: 'The type of the custom field.
+
+                    `TEXT` represents a custom field which can store any text value.
+
+                    `SELECT` represents a custom field which can store a fixed set of options.
+
+                    '
+                  enum:
+                  - TEXT
+                  - SELECT
+                automationType:
+                  type: string
+                  description: The automation type of the custom field. For now only `CARD` is supported. This means, that the [custom fields](/docs/custom-fields-on-transactions) default value will be copied to every transaction made with the card the field is set on.
+                  enum:
+                  - CARD
+                mandatoryOnAutomation:
+                  type: boolean
+                  description: If set to true, this means this custom field is mandatory to be filled with a default value on the level of the automation, here `CARD`.
+                mandatoryForExport:
+                  type: boolean
+                  description: If set to true, this means this custom field is mandatory to be filled on every transaction which should be exported with the Pliant accounting export.
+                visibility:
+                  type: string
+                  description: 'Controls where the values of this custom field are visible.
+
+                    `ADMIN_AND_CARDHOLDER` makes the values visible to both admins and cardholders.
+
+                    `ADMIN_ONLY` makes the values visible only to admins.
+
+                    `NOWHERE` hides the values from both admins and cardholders.
+
+                    Optional; defaults to `ADMIN_AND_CARDHOLDER` when omitted.
+
+                    '
+                  enum:
+                  - ADMIN_AND_CARDHOLDER
+                  - ADMIN_ONLY
+                  - NOWHERE
+                  default: ADMIN_AND_CARDHOLDER
+      responses:
+        '200':
+          description: Ok. The custom field can be used after you received the callback for the `CUSTOM_FIELD_CREATED` event.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          description: The id of the custom field.
+                        label:
+                          type: string
+                          description: The label of the custom field, displayed in a UI for example.
+                        description:
+                          type:
+                          - string
+                          - 'null'
+                          description: The description of the custom field, displayed in a UI for example.
+                        defaultValue:
+                          type:
+                          - string
+                          - 'null'
+                          description: The default value of the custom field, optional.
+                        type:
+                          type: string
+                          description: 'The type of the custom field.
+
+                            `TEXT` represents a custom field which can store any text value.
+
+                            `SELECT` represents a custom field which can store a fixed set of options.
+
+                            '
+                          enum:
+                          - TEXT
+                          - SELECT
+                        status:
+                          type: string
+                          description: The status of the custom field. Only an active custom field can be used.
+                          enum:
+                          - ACTIVE
+                          - INACTIVE
+                        automationType:
+                          type: string
+                          description: The automation type of the custom field. For now only `CARD` is supported. This means, that the [custom fields](/docs/custom-fields-on-transactions) default value will be copied to every transaction made with the card the field is set on.
+                          enum:
+                          - CARD
+                        mandatoryOnAutomation:
+                          type: boolean
+                          description: If set to true, this means this custom field is mandatory to be filled with a default value on the level of the automation, here `CARD`.
+                        mandatoryForExport:
+                          type: boolean
+                          description: If set to true, this means this custom field is mandatory to be filled on every transaction which should be exported with the Pliant accounting export.
+                        visibility:
+                          type: string
+                          description: 'Controls where the values of this custom field are visible.
+
+                            `ADMIN_AND_CARDHOLDER` makes the values visible to both admins and cardholders.
+
+                            `ADMIN_ONLY` makes the values visible only to admins.
+
+                            `NOWHERE` hides the values from both admins and cardholders.
+
+                            '
+                          enum:
+                          - ADMIN_AND_CARDHOLDER
+                          - ADMIN_ONLY
+                          - NOWHERE
+                        createdAt:
+                          type: string
+                          format: date-time
+                          description: The date and time the custom field was created.
+                        updatedAt:
+                          type:
+                          - string
+                          - 'null'
+                          format: date-time
+                          description: The date and time the custom field was last updated.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /transactions/custom-fields/{customFieldId}:
+    put:
+      summary: Update Custom Field
+      description: Update an existing custom field for the organization. Custom fields can be used to store additional information on transactions.
+      tags:
+      - Custom Fields
+      operationId: update-custom-field
+      parameters:
+      - name: customFieldId
+        required: true
+        in: path
+        description: The unique identifier of the custom field to update.
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - label
+              - status
+              - mandatoryOnAutomation
+              - mandatoryForExport
+              properties:
+                label:
+                  type: string
+                  description: The label of the custom field, displayed in the UI.
+                description:
+                  type: string
+                  description: The description of the custom field, displayed in the UI, optional.
+                defaultValue:
+                  type: string
+                  description: The default value of the custom field, optional.
+                status:
+                  type: string
+                  description: The status of the custom field. Only an active custom field can be used.
+                  enum:
+                  - ACTIVE
+                  - INACTIVE
+                mandatoryOnAutomation:
+                  type: boolean
+                  description: If set to true, this means this custom field is mandatory to be filled with a default value on the level of the automation, here `CARD`.
+                mandatoryForExport:
+                  type: boolean
+                  description: If set to true, this means this custom field is mandatory to be filled on every transaction which should be exported with the Pliant accounting export.
+                visibility:
+                  type: string
+                  description: 'Controls where the values of this custom field are visible.
+
+                    `ADMIN_AND_CARDHOLDER` makes the values visible to both admins and cardholders.
+
+                    `ADMIN_ONLY` makes the values visible only to admins.
+
+                    `NOWHERE` hides the values from both admins and cardholders.
+
+                    Optional; if omitted, the existing value is preserved.
+
+                    '
+                  enum:
+                  - ADMIN_AND_CARDHOLDER
+                  - ADMIN_ONLY
+                  - NOWHERE
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          description: The id of the custom field.
+                        label:
+                          type: string
+                          description: The label of the custom field, displayed in a UI for example.
+                        description:
+                          type:
+                          - string
+                          - 'null'
+                          description: The description of the custom field, displayed in a UI for example.
+                        defaultValue:
+                          type:
+                          - string
+                          - 'null'
+                          description: The default value of the custom field, optional.
+                        type:
+                          type: string
+                          description: 'The type of the custom field.
+
+                            `TEXT` represents a custom field which can store any text value.
+
+                            `SELECT` represents a custom field which can store a fixed set of options.
+
+                            '
+                          enum:
+                          - TEXT
+                          - SELECT
+                        status:
+                          type: string
+                          description: The status of the custom field. Only an active custom field can be used.
+                          enum:
+                          - ACTIVE
+                          - INACTIVE
+                        automationType:
+                          type: string
+                          description: The automation type of the custom field. For now only `CARD` is supported. This means, that the [custom fields](/docs/custom-fields-on-transactions) default value will be copied to every transaction made with the card the field is set on.
+                          enum:
+                          - CARD
+                        mandatoryOnAutomation:
+                          type: boolean
+                          description: If set to true, this means this custom field is mandatory to be filled with a default value on the level of the automation, here `CARD`.
+                        mandatoryForExport:
+                          type: boolean
+                          description: If set to true, this means this custom field is mandatory to be filled on every transaction which should be exported with the Pliant accounting export.
+                        visibility:
+                          type: string
+                          description: 'Controls where the values of this custom field are visible.
+
+                            `ADMIN_AND_CARDHOLDER` makes the values visible to both admins and cardholders.
+
+                            `ADMIN_ONLY` makes the values visible only to admins.
+
+                            `NOWHERE` hides the values from both admins and cardholders.
+
+                            '
+                          enum:
+                          - ADMIN_AND_CARDHOLDER
+                          - ADMIN_ONLY
+                          - NOWHERE
+                        createdAt:
+                          type: string
+                          format: date-time
+                          description: The date and time the custom field was created.
+                        updatedAt:
+                          type:
+                          - string
+                          - 'null'
+                          format: date-time
+                          description: The date and time the custom field was last updated.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+    delete:
+      summary: Delete Custom Field
+      description: Delete an existing custom field on the organization. You can only delete custom fields that are not used in any transaction and in status `INACTIVE`. You can set the custom field to `INACTIVE` to prevent it from being used in new transactions via our update endpoint.
+      tags:
+      - Custom Fields
+      operationId: delete-custom-field
+      parameters:
+      - name: customFieldId
+        required: true
+        in: path
+        description: The unique identifier of the custom field to delete.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: No Content. The custom field was successfully deleted.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /transactions/custom-fields/{customFieldId}/options:
+    get:
+      summary: List Custom Field Options
+      description: Returns a list of all custom field options for the given custom field. Custom field options can be edited by the organization via the Pliant web app or API. Options give you the flexibility to define a fixed set of options a custom field can have. This can be useful for example if you want to restrict the values a customer can use.
+      tags:
+      - Custom Fields
+      operationId: get-custom-field-options
+      parameters:
+      - name: customFieldId
+        required: true
+        in: path
+        description: The unique identifier of the custom field for which you want to list the possible options. The custom field has to be of type `SELECT`.
+        schema:
+          type: string
+          format: uuid
+      - name: fromDate
+        in: query
+        description: The `from` date to filter by as zero-offset UTC time. The date boundary is inclusive. Meaning we compare with `>=`.
+        schema:
+          type: string
+          format: date-time
+          example: '2024-07-19T15:00:00.000000Z'
+      - name: toDate
+        in: query
+        description: The `to` date to filter by as zero-offset UTC time. The date boundary is inclusive. Meaning we compare with `<=`.
+        schema:
+          type: string
+          format: date-time
+          example: '2024-07-19T15:00:00.000000Z'
+      - name: byDateField
+        in: query
+        description: The date field to filter by if `fromDate` and `toDate` are present.
+        schema:
+          type:
+          - string
+          - 'null'
+          enum:
+          - createdAt
+          - updatedAt
+          default: createdAt
+      - name: limit
+        in: query
+        description: The maximum number of items to return per page. The default value if not provided is 100, the maximum allowed value is 1000.
+        schema:
+          type: integer
+      - name: page
+        in: query
+        description: The page number to return, starting with 0, this counts up to the total number of pages. The total number of pages is determined by the total number of records divided by the limit.
+        schema:
+          type: integer
+      - name: sortBy
+        in: query
+        description: The field to sort by.
+        schema:
+          type: string
+          enum:
+          - createdAt
+          - updatedAt
+      - name: sortDirection
+        in: query
+        description: The direction to sort by.
+        schema:
+          type: string
+          enum:
+          - ASC
+          - DESC
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          description: The id of the custom field option.
+                        customFieldId:
+                          type: string
+                          format: uuid
+                          description: The id of the custom field this option belongs to.
+                        name:
+                          type: string
+                          description: The name of the custom field option, readable for humans.
+                        value:
+                          type: string
+                          description: The value of the custom field option. This is mostly your internal value you want to process.
+                        status:
+                          type: string
+                          description: The status of the custom field option. Only an active custom field option can be used.
+                          enum:
+                          - ACTIVE
+                          - INACTIVE
+                        isDefault:
+                          type: boolean
+                          description: If set to true, this means this custom field option is the default option for the related custom field.
+                        createdAt:
+                          type: string
+                          format: date-time
+                          description: The date and time the custom field option was created.
+                        updatedAt:
+                          type: string
+                          format: date-time
+                          description: The date and time the custom field option was last updated.
+                  hasNextPage:
+                    type: boolean
+                    description: Indicates whether there is a next page available.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+    post:
+      summary: Create Custom Field Option
+      description: Add a new, single custom field option to a given custom field of type `SELECT`.
+      tags:
+      - Custom Fields
+      operationId: create-custom-field-option
+      parameters:
+      - name: customFieldId
+        required: true
+        in: path
+        description: The unique identifier of the custom field for which you want to add a new option.
+        schema:
+          type: string
+          format: uuid
+      - name: organizationId
+        required: true
+        in: query
+        description: The unique identifier of the organization to create the custom field option for.
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - name
+              - value
+              - isDefault
+              properties:
+                name:
+                  type: string
+                  description: The name of the custom field option, readable for humans.
+                value:
+                  type: string
+                  description: The value of the custom field option. This is mostly your internal value you want to process.
+                isDefault:
+                  type: boolean
+                  description: If set to true, this means this custom field option is the default option for the related custom field.
+      responses:
+        '200':
+          description: Ok. The custom field option can be used after you received the callback for the `CUSTOM_FIELD_OPTION_CREATED` event.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          description: The id of the custom field option.
+                        customFieldId:
+                          type: string
+                          format: uuid
+                          description: The id of the custom field this option belongs to.
+                        name:
+                          type: string
+                          description: The name of the custom field option, readable for humans.
+                        value:
+                          type: string
+                          description: The value of the custom field option. This is mostly your internal value you want to process.
+                        status:
+                          type: string
+                          description: The status of the custom field option. Only an active custom field option can be used.
+                          enum:
+                          - ACTIVE
+                          - INACTIVE
+                        source:
+                          type: string
+                          description: The source of the custom field option, i.e. how it was created. `PLIANT` means it was created via the Pliant web app. `API` means it was created via the Pliant API. `ACCOUNTING_SYSTEM` means it was created via the accounting system used by the organization.
+                          enum:
+                          - PLIANT
+                          - API
+                          - ACCOUNTING_SYSTEM
+                        externalReference:
+                          type:
+                          - string
+                          - 'null'
+                          description: The external reference of the custom field option. This is the reference in the accounting system and used only there.
+                        isDefault:
+                          type: boolean
+                          description: If set to true, this means this custom field option is the default option for the related custom field.
+                        createdAt:
+                          type: string
+                          format: date-time
+                          description: The date and time the custom field option was created.
+                        updatedAt:
+                          type: string
+                          format: date-time
+                          description: The date and time the custom field option was last updated.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /transactions/custom-fields/{customFieldId}/options/{customFieldOptionId}:
+    put:
+      summary: Update Custom Field Option
+      description: Update an existing custom field option on the organization.
+      tags:
+      - Custom Fields
+      operationId: update-custom-field-option
+      parameters:
+      - name: customFieldId
+        required: true
+        in: path
+        description: The unique identifier of the custom field.
+        schema:
+          type: string
+          format: uuid
+      - name: customFieldOptionId
+        required: true
+        in: path
+        description: The unique identifier of the custom field option to update.
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - name
+              - value
+              - isDefault
+              - status
+              properties:
+                name:
+                  type: string
+                  description: The name of the custom field option, readable for humans.
+                value:
+                  type: string
+                  description: The value of the custom field option. This is mostly your internal value you want to process.
+                status:
+                  type: string
+                  description: The status of the custom field option. Only an active custom field option can be used.
+                  enum:
+                  - ACTIVE
+                  - INACTIVE
+                isDefault:
+                  type: boolean
+                  description: If set to true, this means this custom field option is the default option for the related custom field.
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          description: The id of the custom field option.
+                        customFieldId:
+                          type: string
+                          format: uuid
+                          description: The id of the custom field this option belongs to.
+                        name:
+                          type: string
+                          description: The name of the custom field option, readable for humans.
+                        value:
+                          type: string
+                          description: The value of the custom field option. This is mostly your internal value you want to process.
+                        status:
+                          type: string
+                          description: The status of the custom field option. Only an active custom field option can be used.
+                          enum:
+                          - ACTIVE
+                          - INACTIVE
+                        source:
+                          type: string
+                          description: The source of the custom field option, i.e. how it was created. `PLIANT` means it was created via the Pliant web app. `API` means it was created via the Pliant API. `ACCOUNTING_SYSTEM` means it was created via the accounting system used by the organization.
+                          enum:
+                          - PLIANT
+                          - API
+                          - ACCOUNTING_SYSTEM
+                        externalReference:
+                          type:
+                          - string
+                          - 'null'
+                          description: The external reference of the custom field option. This is the reference in the accounting system and used only there.
+                        isDefault:
+                          type: boolean
+                          description: If set to true, this means this custom field option is the default option for the related custom field.
+                        createdAt:
+                          type: string
+                          format: date-time
+                          description: The date and time the custom field option was created.
+                        updatedAt:
+                          type: string
+                          format: date-time
+                          description: The date and time the custom field option was last updated.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+    delete:
+      summary: Delete Custom Field Option
+      description: Delete an existing custom field option on the organization. You can only delete custom field options that are not used in any transaction and in status `INACTIVE`. You can set the custom field option to `INACTIVE` to prevent it from being used in new transactions via our update endpoint.
+      tags:
+      - Custom Fields
+      operationId: delete-custom-field-option
+      parameters:
+      - name: customFieldId
+        required: true
+        in: path
+        description: The unique identifier of the custom field.
+        schema:
+          type: string
+          format: uuid
+      - name: customFieldOptionId
+        required: true
+        in: path
+        description: The unique identifier of the custom field option to delete.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: No Content. The custom field option was successfully deleted.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: This API uses oAuth2 with client credentials flow to [obtain the Bearer Token](/docs/authenticated-api-usage).
+      bearerFormat: JWT
+x-provenance:
+  method: searched
+  source: https://customer-api.getpliant.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://customer-api.getpliant.com/reference/activate-physical-card.md
+  - https://customer-api.getpliant.com/reference/assign-project-team.md
+  - https://customer-api.getpliant.com/reference/assign-to-team.md
+  - https://customer-api.getpliant.com/reference/bulk-upsert-subscriptions.md
+  - https://customer-api.getpliant.com/reference/card-pan-and-cvv-pci-vault.md
+  - https://customer-api.getpliant.com/reference/card-pan-tokenized-from-pci-proxy.md
+  - https://customer-api.getpliant.com/reference/claim-card-as-copilot.md
+  - https://customer-api.getpliant.com/reference/create-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-transfer.md
+  - https://customer-api.getpliant.com/reference/create-card-account.md
+  - https://customer-api.getpliant.com/reference/create-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-subscription.md
+  - https://customer-api.getpliant.com/reference/create-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/create-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/create-custom-field.md
+  - https://customer-api.getpliant.com/reference/create-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/create-project.md
+  - https://customer-api.getpliant.com/reference/create-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/create-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/create-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/create-team.md
+  - https://customer-api.getpliant.com/reference/create-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/deactivate-card-account.md
+  - https://customer-api.getpliant.com/reference/deactivate-cardholder.md
+  - https://customer-api.getpliant.com/reference/deactivate-team.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field.md
+  - https://customer-api.getpliant.com/reference/delete-project.md
+  - https://customer-api.getpliant.com/reference/delete-receipt.md
+  - https://customer-api.getpliant.com/reference/delete-subscription.md
+  - https://customer-api.getpliant.com/reference/delete-team.md
+  - https://customer-api.getpliant.com/reference/delete-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/generate-test-transactions-in-sandbox.md
+  - https://customer-api.getpliant.com/reference/get-account-entries.md
+  - https://customer-api.getpliant.com/reference/get-accounting-transactions-batch.md
+  - https://customer-api.getpliant.com/reference/get-available-cards.md
+  - https://customer-api.getpliant.com/reference/get-callback-details.md
+  - https://customer-api.getpliant.com/reference/get-callback-log.md
+  - https://customer-api.getpliant.com/reference/get-callback-subscriptions.md
+  - https://customer-api.getpliant.com/reference/get-callback.md
+  - https://customer-api.getpliant.com/reference/get-card-account-details.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts-available-currencies.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts.md
+  - https://customer-api.getpliant.com/reference/get-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/get-card-pin.md
+  - https://customer-api.getpliant.com/reference/get-cardholder-details.md
+  - https://customer-api.getpliant.com/reference/get-cards.md
+  - https://customer-api.getpliant.com/reference/get-custom-field-options.md
+  - https://customer-api.getpliant.com/reference/get-custom-fields.md
+  - https://customer-api.getpliant.com/reference/get-multiple-card-details.md
+  - https://customer-api.getpliant.com/reference/get-organization-details.md
+  - https://customer-api.getpliant.com/reference/get-otp-for-pci-widget.md
+  - https://customer-api.getpliant.com/reference/get-payments-detail.md
+  - https://customer-api.getpliant.com/reference/get-payments.md
+  - https://customer-api.getpliant.com/reference/get-projects.md
+  - https://customer-api.getpliant.com/reference/get-receipt-automatcher-status.md
+  - https://customer-api.getpliant.com/reference/get-receipt-detail.md
+  - https://customer-api.getpliant.com/reference/get-receipts.md
+  - https://customer-api.getpliant.com/reference/get-single-card-details.md
+  - https://customer-api.getpliant.com/reference/get-statement-csv.md
+  - https://customer-api.getpliant.com/reference/get-statement-detail.md
+  - https://customer-api.getpliant.com/reference/get-statementpdf.md
+  - https://customer-api.getpliant.com/reference/get-statements.md
+  - https://customer-api.getpliant.com/reference/get-teams.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail-batch.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail.md
+  - https://customer-api.getpliant.com/reference/get-transactions.md
+  - https://customer-api.getpliant.com/reference/invite-cardholders.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant-with-pci.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant.md
+  - https://customer-api.getpliant.com/reference/issue-card.md
+  - https://customer-api.getpliant.com/reference/list-cardholders.md
+  - https://customer-api.getpliant.com/reference/list-organizations.md
+  - https://customer-api.getpliant.com/reference/load-cards-batch.md
+  - https://customer-api.getpliant.com/reference/lock-card.md
+  - https://customer-api.getpliant.com/reference/metadata-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/receipt-as-merged-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-as-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-original.md
+  - https://customer-api.getpliant.com/reference/receipt-thumbnail.md
+  - https://customer-api.getpliant.com/reference/register-cardholders.md
+  - https://customer-api.getpliant.com/reference/remove-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cards-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/replace-card.md
+  - https://customer-api.getpliant.com/reference/resend-callbacks.md
+  - https://customer-api.getpliant.com/reference/search-callbacks.md
+  - https://customer-api.getpliant.com/reference/simulate-prefund-payment.md
+  - https://customer-api.getpliant.com/reference/simulate-transaction-status-transition.md
+  - https://customer-api.getpliant.com/reference/terminate-card.md
+  - https://customer-api.getpliant.com/reference/unassign-from-team.md
+  - https://customer-api.getpliant.com/reference/unassign-project-team.md
+  - https://customer-api.getpliant.com/reference/unlock-card.md
+  - https://customer-api.getpliant.com/reference/update-card-account.md
+  - https://customer-api.getpliant.com/reference/update-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/update-card-copilots.md
+  - https://customer-api.getpliant.com/reference/update-card-label.md
+  - https://customer-api.getpliant.com/reference/update-card-limit.md
+  - https://customer-api.getpliant.com/reference/update-card-validity-period.md
+  - https://customer-api.getpliant.com/reference/update-card.md
+  - https://customer-api.getpliant.com/reference/update-cardholders.md
+  - https://customer-api.getpliant.com/reference/update-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/update-custom-field.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-accounting-transaction.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-card.md
+  - https://customer-api.getpliant.com/reference/update-project.md
+  - https://customer-api.getpliant.com/reference/update-team.md
+  - https://customer-api.getpliant.com/reference/update-transaction-category.md
+  - https://customer-api.getpliant.com/reference/update-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status-batch.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status.md
+  - https://customer-api.getpliant.com/reference/update-transaction-receipt-upload.md
+  - https://customer-api.getpliant.com/reference/upload-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/upload-receipt.md
+  merge:
+    pages: 128
+    deduped: 452
+    conflicts_kept_first: 0

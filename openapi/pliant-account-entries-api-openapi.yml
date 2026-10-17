@@ -1,0 +1,592 @@
+openapi: 3.2.0
+info:
+  contact:
+    name: API Support
+    email: support@getpliant.com
+    url: https://www.getpliant.com
+  title: Pliant Customer Account Entries API
+  description: Pliant Customer API
+  version: 2.1.0
+  license:
+    name: MIT
+    url: https://opensource.org/license/MIT
+servers:
+- url: https://partner-api.getpliant.com/api
+  description: Pliant Production Server
+- url: https://sandbox.partner-api.getpliant.com/api
+  description: Pliant Sandbox Server
+- url: https://pci-api.getpliant.com
+  description: PCI Vault Production Server
+- url: https://pci-sandbox.partner-api.getpliant.com
+  description: PCI Vault Sandbox Server
+security:
+- bearerAuth: []
+tags:
+- name: Account Entries
+  description: This tag is for operations related to account entries
+paths:
+  /account-entries:
+    get:
+      summary: Get Account Entries
+      description: 'Query account entries for a specific organization. Account entries represent a single booked movement on the (bank) account of the organization. This can be a transaction, payment etc. Account entries are then grouped by statements.
+
+        **Please note that account entries only include finally booked movements and do not include pending transactions or similar non-final movements.**'
+      tags:
+      - Account Entries
+      operationId: get-account-entries
+      parameters:
+      - name: organizationId
+        in: query
+        description: The organization for which the account entries are requested.
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: cardAccountId
+        in: query
+        description: The card account for which the account entries are requested. If not provided the default card account of the given organization is used. Account entries keep the card account id they were booked on. If a card account was superseded, filtering by the superseded id returns the entries booked before the switch and filtering by its successor (`supersededBy`) returns the ones booked after. Query both ids to get a complete list across the switch.
+        schema:
+          type: string
+          format: uuid
+      - name: type
+        in: query
+        description: The type of the account entry to filter by.
+        schema:
+          type: string
+          enum:
+          - TRANSACTION
+          - BILL_PAYMENT
+          - REIMBURSEMENT
+          - CARD_ACCOUNT_LOAD
+          - EXTERNAL_TRANSFER
+          - OTHER
+      - name: fromDate
+        in: query
+        description: The `from` date to filter by as zero-offset UTC time. The date boundary is inclusive. Meaning we compare with `>=`.
+        schema:
+          type: string
+          format: date-time
+          example: '2024-07-19T15:00:00.000000Z'
+        required: false
+      - name: toDate
+        in: query
+        description: The `to` date to filter by as zero-offset UTC time. The date boundary is inclusive. Meaning we compare with `<=`.
+        schema:
+          type: string
+          format: date-time
+          example: '2024-07-19T15:00:00.000000Z'
+        required: false
+      - name: byDateField
+        in: query
+        description: The date field to filter by if `fromDate` and `toDate` are present.
+        schema:
+          type: string
+          enum:
+          - bookingDate
+          - createdAt
+          - updatedAt
+          default: bookingDate
+        required: false
+      - name: limit
+        in: query
+        description: The maximum number of items to return per page. The default value if not provided is 100, the maximum allowed value is 1000.
+        schema:
+          type: integer
+      - name: page
+        in: query
+        description: The page number to return, starting with 0, this counts up to the total number of pages. The total number of pages is determined by the total number of records divided by the limit.
+        schema:
+          type: integer
+      - name: sortBy
+        in: query
+        description: The field to sort by.
+        schema:
+          type: string
+          enum:
+          - index
+          - bookingDate
+      - name: sortDirection
+        in: query
+        description: The direction to sort by.
+        schema:
+          type: string
+          enum:
+          - ASC
+          - DESC
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        accountEntryId:
+                          type: string
+                          format: uuid
+                          description: The unique identifier of the account entry.
+                        organizationId:
+                          type: string
+                          format: uuid
+                          description: The organization to which the account entry belongs.
+                        cardAccountId:
+                          type: string
+                          format: uuid
+                          description: The card account to which the account entry belongs.
+                        type:
+                          type: string
+                          enum:
+                          - TRANSACTION
+                          - BILL_PAYMENT
+                          - REIMBURSEMENT
+                          - CARD_ACCOUNT_LOAD
+                          - EXTERNAL_TRANSFER
+                          - OTHER
+                          description: 'The type of the account entry. It can be one of the following values:
+
+                            - `TRANSACTION`: A transaction that was made on the card account.
+
+                            - `BILL_PAYMENT`: A bill payment that was made on the card account.
+
+                            - `REIMBURSEMENT`: A reimbursement that was made on the card account.
+
+                            - `CARD_ACCOUNT_LOAD`: An automatic load on the card account. This is only relevant for benefit card based card accounts.
+
+                            - `EXTERNAL_TRANSFER`: Global bank transfers
+
+                            - `OTHER`: Any other type of account entry.
+
+                            '
+                        index:
+                          type: integer
+                          description: The running index of the account entry. This index is unique per organization and card account.
+                        bookingDate:
+                          type: string
+                          format: date
+                          description: The booking date of the account entry. This is the date when the account entry was booked. E.g. `2024-07-19`.
+                        amount:
+                          type: object
+                          description: The amount of the account entry itself.
+                          properties:
+                            value:
+                              type: number
+                              description: The value of the monetary amount, converted to minor units of the currency. For instance 1.00 EUR is 100 cents, thus the value here is `100`. See our [guides](/docs/monetary-values) for more details about how to handle monetary amounts.
+                            currency:
+                              type: string
+                              description: The currency of the monetary amount in ISO 4217 format, for example `EUR` for Euro or `USD` for US Dollar.
+                        balanceAfter:
+                          type: object
+                          description: The balance after the account entry was booked.
+                          properties:
+                            value:
+                              type: number
+                              description: The value of the balance after the account entry.
+                            currency:
+                              type: string
+                              description: The currency of the balance after the account entry.
+                        transactionType:
+                          type:
+                          - string
+                          - 'null'
+                          description: The type of the transaction. This field is only present if the account entry is of type `TRANSACTION`. The `type` is equal to the type of a [transaction](/reference/get-transactions-detail-batch).
+                        transactionId:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                          description: The unique identifier of the transaction that is associated with the account entry. This field is only present if the account entry is of type `TRANSACTION`.
+                        billPaymentType:
+                          type:
+                          - string
+                          - 'null'
+                          description: The type of the bill payment. This field is only present if the account entry is of type `BILL_PAYMENT`. The `type` is equal to the type of a [payment](/reference/get-payments-detail).
+                        billPaymentId:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                          description: The unique identifier of the bill payment that is associated with the account entry. This field is only present if the account entry is of type `BILL_PAYMENT`.
+                        createdAt:
+                          type: string
+                          format: date-time
+                          description: The date and time when the account entry was created.
+                        updatedAt:
+                          type: string
+                          format: date-time
+                          description: The date and time when the account entry was last updated.
+                        fxFee:
+                          type: object
+                          description: The foreign exchange fee that was charged for this transaction, if this account entry represents a transaction (`type` = `TRANSACTION`).
+                          properties:
+                            fxFeePercentage:
+                              type:
+                              - number
+                              - 'null'
+                              description: 'The per-organization fee (as a percentage of the transaction amount) that is charged for foreign exchange transactions. This value is specific to this organization. Example: `2.1`.'
+                              format: float
+                              example: 2.1
+                              minimum: 0
+                              maximum: 100
+                            fxFeeAmount:
+                              type:
+                              - object
+                              - 'null'
+                              description: 'The specific amount of the foreign exchange fee that was charged for this transaction. Example: `0.21 EUR`.'
+                              properties:
+                                value:
+                                  type: number
+                                  description: The value of the monetary amount, converted to minor units of the currency. For instance 1.00 EUR is 100 cents, thus the value here is `100`. See our [guides](/docs/monetary-values) for more details about how to handle monetary amounts.
+                                  example: 21
+                                currency:
+                                  type: string
+                                  description: The currency of the monetary amount in ISO 4217 format, for example `EUR` for Euro or `USD` for US Dollar.
+                                  example: EUR
+                  hasNextPage:
+                    type: boolean
+                    description: Indicates whether there is a next page available.
+        '400':
+          $ref: '#/paths/~1cards/get/responses/400'
+        '401':
+          $ref: '#/paths/~1cards/get/responses/401'
+        '403':
+          $ref: '#/paths/~1cards/get/responses/403'
+        '429':
+          $ref: '#/paths/~1cards/get/responses/429'
+        '500':
+          $ref: '#/paths/~1cards/get/responses/500'
+  /account-entries/subscription:
+    post:
+      summary: 'Callback: Add/Update'
+      description: Subscribe to callbacks for this entity or change an existing callback.
+      tags:
+      - Account Entries
+      operationId: create-account-entry-subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                callbackUrl:
+                  type: string
+                  format: uri
+                  example: https://myserver.com/send/callback/here
+                  description: The URL to send the callback to. Must be a valid and reachable URL. We do some basic validation to ensure the URL is syntactically correct and reachable for Pliant. Only HTTPS URLs are supported.
+                eventTypes:
+                  type: array
+                  description: The event types to subscribe to.
+                  items:
+                    type: string
+                    enum:
+                    - ACCOUNT_ENTRY_CREATED
+              required:
+              - callbackUrl
+              - eventTypes
+      responses:
+        '201':
+          description: Created
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+      callbacks:
+        accountEntryCreated:
+          '{$request.body#/callbackUrl}':
+            description: Callback structure for account entry creation (ACCOUNT_ENTRY_CREATED).
+            post:
+              parameters:
+              - in: header
+                name: X-Organization-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the organization this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Partner-Organization-Id
+                schema:
+                  type: string
+                  description: 'Filled, if the value `partnerOrganizationId` is [set](/reference/update-organization) by the partner on the organization itself. Referencing the organization identifier of the partner. Example value: `abc123`.'
+              - in: header
+                name: X-Payment-Program-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'Referencing the payment program this callback was sent for. See [guides](/docs/callbacks) for more details. Example value: `54e6e7e7-0c23-4a54-bccb-2d3ff2fd02df`.'
+              - in: header
+                name: X-Callback-Id
+                schema:
+                  type: string
+                  format: uuid
+                  description: 'A unique identifier for this callback. Can be used to deduplicate callbacks to achieve idempotent behavior. See [guides](/docs/callbacks) for more details. Example value: `12a03093-eaad-4ae5-9d8d-42e7f6f8b7c6`.'
+              - in: header
+                name: X-Callback-Created-At
+                schema:
+                  type: string
+                  format: date-time
+                  description: 'The date and time when the callback was created. Can be used to reorder callbacks. See [guides](/docs/callbacks) for more details. Example value: `2024-03-15T15:55:58.623375258Z`.'
+              requestBody:
+                content:
+                  application/json:
+                    schema:
+                      allOf:
+                      - $ref: '#/paths/~1cards~1subscription/post/callbacks/cardUpdated/{$request.body#~1callbackUrl}/post/requestBody/content/application~1json/schema/allOf/0'
+                      - type: object
+                        properties:
+                          accountEntryId:
+                            type: string
+                            format: uuid
+                            description: The unique identifier of the account entry.
+                          organizationId:
+                            type: string
+                            format: uuid
+                            description: The organization to which the account entry belongs.
+                          cardAccountId:
+                            type: string
+                            format: uuid
+                            description: The card account to which the account entry belongs.
+                          type:
+                            type: string
+                            enum:
+                            - TRANSACTION
+                            - BILL_PAYMENT
+                            - OTHER
+                            description: The type of the account entry. It can be a transaction, a bill payment, or other.
+                          index:
+                            type: integer
+                            description: The running index of the account entry. This index is unique per organization and card account.
+                          bookingDate:
+                            type: string
+                            format: date
+                            description: The booking date of the account entry. This is the date when the account entry was booked. E.g. `2024-07-19`.
+                          amount:
+                            type: object
+                            description: The amount of the account entry itself.
+                            properties:
+                              value:
+                                type: number
+                                description: The value of the monetary amount, converted to minor units of the currency. For instance 1.00 EUR is 100 cents, thus the value here is `100`. See our [guides](/docs/monetary-values) for more details about how to handle monetary amounts.
+                              currency:
+                                type: string
+                                description: The currency of the monetary amount in ISO 4217 format, for example `EUR` for Euro or `USD` for US Dollar.
+                          balanceAfter:
+                            type: object
+                            description: The balance after the account entry was booked.
+                            properties:
+                              value:
+                                type: number
+                                description: The value of the balance after the account entry.
+                              currency:
+                                type: string
+                                description: The currency of the balance after the account entry.
+                          transactionType:
+                            type:
+                            - string
+                            - 'null'
+                            description: The type of the transaction. This field is only present if the account entry is of type `TRANSACTION`. The `type` is equal to the type of a [transaction](/reference/get-transactions-detail-batch).
+                          transactionId:
+                            type:
+                            - string
+                            - 'null'
+                            format: uuid
+                            description: The unique identifier of the transaction that is associated with the account entry. This field is only present if the account entry is of type `TRANSACTION`.
+                          billPaymentType:
+                            type:
+                            - string
+                            - 'null'
+                            description: The type of the bill payment. This field is only present if the account entry is of type `BILL_PAYMENT`. The `type` is equal to the type of a [payment](/reference/get-payments-detail).
+                          billPaymentId:
+                            type:
+                            - string
+                            - 'null'
+                            format: uuid
+                            description: The unique identifier of the bill payment that is associated with the account entry. This field is only present if the account entry is of type `BILL_PAYMENT`.
+                          createdAt:
+                            type: string
+                            format: date-time
+                            description: The date and time when the account entry was created.
+                          updatedAt:
+                            type: string
+                            format: date-time
+                            description: The date and time when the account entry was last updated.
+              responses:
+                '200':
+                  description: We expect the partner to return a HTTP 200 status code if the callback was successfully received. On 4xx and 5xx status codes, we will [retry](/docs/callbacks#retries) the callback.
+    delete:
+      summary: 'Callback: Remove'
+      description: Remove a callback subscription for this entity.
+      tags:
+      - Account Entries
+      operationId: remove-account-entry-subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                eventTypes:
+                  type: array
+                  description: The event types to unsubscribe from.
+                  items:
+                    type: string
+                    enum:
+                    - ACCOUNT_ENTRY_CREATED
+              required:
+              - eventTypes
+      responses:
+        '200':
+          description: Ok
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: This API uses oAuth2 with client credentials flow to [obtain the Bearer Token](/docs/authenticated-api-usage).
+      bearerFormat: JWT
+x-provenance:
+  method: searched
+  source: https://customer-api.getpliant.com/reference
+  harvested: '2026-10-14'
+  tool: harvest-readme-openapi.py
+  note: Assembled verbatim from the OpenAPI definition ReadMe embeds in each operation page of the provider's developer portal; paths and components merged by API title, nothing authored.
+  assembled_from:
+  - https://customer-api.getpliant.com/reference/activate-physical-card.md
+  - https://customer-api.getpliant.com/reference/assign-project-team.md
+  - https://customer-api.getpliant.com/reference/assign-to-team.md
+  - https://customer-api.getpliant.com/reference/bulk-upsert-subscriptions.md
+  - https://customer-api.getpliant.com/reference/card-pan-and-cvv-pci-vault.md
+  - https://customer-api.getpliant.com/reference/card-pan-tokenized-from-pci-proxy.md
+  - https://customer-api.getpliant.com/reference/claim-card-as-copilot.md
+  - https://customer-api.getpliant.com/reference/create-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/create-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-account-transfer.md
+  - https://customer-api.getpliant.com/reference/create-card-account.md
+  - https://customer-api.getpliant.com/reference/create-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/create-card-subscription.md
+  - https://customer-api.getpliant.com/reference/create-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/create-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/create-custom-field.md
+  - https://customer-api.getpliant.com/reference/create-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/create-project.md
+  - https://customer-api.getpliant.com/reference/create-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/create-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/create-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/create-team.md
+  - https://customer-api.getpliant.com/reference/create-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/deactivate-card-account.md
+  - https://customer-api.getpliant.com/reference/deactivate-cardholder.md
+  - https://customer-api.getpliant.com/reference/deactivate-team.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/delete-custom-field.md
+  - https://customer-api.getpliant.com/reference/delete-project.md
+  - https://customer-api.getpliant.com/reference/delete-receipt.md
+  - https://customer-api.getpliant.com/reference/delete-subscription.md
+  - https://customer-api.getpliant.com/reference/delete-team.md
+  - https://customer-api.getpliant.com/reference/delete-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/generate-test-transactions-in-sandbox.md
+  - https://customer-api.getpliant.com/reference/get-account-entries.md
+  - https://customer-api.getpliant.com/reference/get-accounting-transactions-batch.md
+  - https://customer-api.getpliant.com/reference/get-available-cards.md
+  - https://customer-api.getpliant.com/reference/get-callback-details.md
+  - https://customer-api.getpliant.com/reference/get-callback-log.md
+  - https://customer-api.getpliant.com/reference/get-callback-subscriptions.md
+  - https://customer-api.getpliant.com/reference/get-callback.md
+  - https://customer-api.getpliant.com/reference/get-card-account-details.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts-available-currencies.md
+  - https://customer-api.getpliant.com/reference/get-card-accounts.md
+  - https://customer-api.getpliant.com/reference/get-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/get-card-pin.md
+  - https://customer-api.getpliant.com/reference/get-cardholder-details.md
+  - https://customer-api.getpliant.com/reference/get-cards.md
+  - https://customer-api.getpliant.com/reference/get-custom-field-options.md
+  - https://customer-api.getpliant.com/reference/get-custom-fields.md
+  - https://customer-api.getpliant.com/reference/get-multiple-card-details.md
+  - https://customer-api.getpliant.com/reference/get-organization-details.md
+  - https://customer-api.getpliant.com/reference/get-otp-for-pci-widget.md
+  - https://customer-api.getpliant.com/reference/get-payments-detail.md
+  - https://customer-api.getpliant.com/reference/get-payments.md
+  - https://customer-api.getpliant.com/reference/get-projects.md
+  - https://customer-api.getpliant.com/reference/get-receipt-automatcher-status.md
+  - https://customer-api.getpliant.com/reference/get-receipt-detail.md
+  - https://customer-api.getpliant.com/reference/get-receipts.md
+  - https://customer-api.getpliant.com/reference/get-single-card-details.md
+  - https://customer-api.getpliant.com/reference/get-statement-csv.md
+  - https://customer-api.getpliant.com/reference/get-statement-detail.md
+  - https://customer-api.getpliant.com/reference/get-statementpdf.md
+  - https://customer-api.getpliant.com/reference/get-statements.md
+  - https://customer-api.getpliant.com/reference/get-teams.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail-batch.md
+  - https://customer-api.getpliant.com/reference/get-transactions-detail.md
+  - https://customer-api.getpliant.com/reference/get-transactions.md
+  - https://customer-api.getpliant.com/reference/invite-cardholders.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant-with-pci.md
+  - https://customer-api.getpliant.com/reference/issue-card-instant.md
+  - https://customer-api.getpliant.com/reference/issue-card.md
+  - https://customer-api.getpliant.com/reference/list-cardholders.md
+  - https://customer-api.getpliant.com/reference/list-organizations.md
+  - https://customer-api.getpliant.com/reference/load-cards-batch.md
+  - https://customer-api.getpliant.com/reference/lock-card.md
+  - https://customer-api.getpliant.com/reference/metadata-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/receipt-as-merged-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-as-pdf.md
+  - https://customer-api.getpliant.com/reference/receipt-original.md
+  - https://customer-api.getpliant.com/reference/receipt-thumbnail.md
+  - https://customer-api.getpliant.com/reference/register-cardholders.md
+  - https://customer-api.getpliant.com/reference/remove-account-entry-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-project-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-team-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-accounting-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-account-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-card-copilot-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cardholder-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-cards-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-payment-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-automatching-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-receipt-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-statement-subscription.md
+  - https://customer-api.getpliant.com/reference/remove-transaction-subscription.md
+  - https://customer-api.getpliant.com/reference/replace-card.md
+  - https://customer-api.getpliant.com/reference/resend-callbacks.md
+  - https://customer-api.getpliant.com/reference/search-callbacks.md
+  - https://customer-api.getpliant.com/reference/simulate-prefund-payment.md
+  - https://customer-api.getpliant.com/reference/simulate-transaction-status-transition.md
+  - https://customer-api.getpliant.com/reference/terminate-card.md
+  - https://customer-api.getpliant.com/reference/unassign-from-team.md
+  - https://customer-api.getpliant.com/reference/unassign-project-team.md
+  - https://customer-api.getpliant.com/reference/unlock-card.md
+  - https://customer-api.getpliant.com/reference/update-card-account.md
+  - https://customer-api.getpliant.com/reference/update-card-controls-by-card.md
+  - https://customer-api.getpliant.com/reference/update-card-copilots.md
+  - https://customer-api.getpliant.com/reference/update-card-label.md
+  - https://customer-api.getpliant.com/reference/update-card-limit.md
+  - https://customer-api.getpliant.com/reference/update-card-validity-period.md
+  - https://customer-api.getpliant.com/reference/update-card.md
+  - https://customer-api.getpliant.com/reference/update-cardholders.md
+  - https://customer-api.getpliant.com/reference/update-custom-field-option.md
+  - https://customer-api.getpliant.com/reference/update-custom-field.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-accounting-transaction.md
+  - https://customer-api.getpliant.com/reference/update-custom-fields-on-card.md
+  - https://customer-api.getpliant.com/reference/update-project.md
+  - https://customer-api.getpliant.com/reference/update-team.md
+  - https://customer-api.getpliant.com/reference/update-transaction-category.md
+  - https://customer-api.getpliant.com/reference/update-transaction-comment.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status-batch.md
+  - https://customer-api.getpliant.com/reference/update-transaction-partner-submission-status.md
+  - https://customer-api.getpliant.com/reference/update-transaction-receipt-upload.md
+  - https://customer-api.getpliant.com/reference/upload-receipt-to-automatcher.md
+  - https://customer-api.getpliant.com/reference/upload-receipt.md
+  merge:
+    pages: 128
+    deduped: 452
+    conflicts_kept_first: 0
