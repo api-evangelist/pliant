@@ -64,6 +64,140 @@
 > Full detail: **[Where this data comes from](https://apievangelist.com/about/where-our-data-comes-from)**
 <!-- API-EVANGELIST-PROVENANCE:END -->
 
-Pliant is a company surfaced as a portfolio company of speedinvest and added to the API Evangelist network as a stub for enrichment. This profile is a lead awaiting the enrichment pipeline.
+Pliant is a Berlin-based financial technology company offering a business credit card and spend-management platform, plus Cards-as-a-Service (CaaS) and Banking-as-a-Service (BaaS) infrastructure for banks and platforms. Its Pro API lets customers programmatically issue physical, virtual, single-use and specialized cards (travel, fleet, benefits, insurance-claim), apply card controls and advanced limits, retrieve transactions and accounting data, manage receipts, projects, teams and statements, and subscribe to real-time callbacks. Pliant is PCI DSS certified, ISO/IEC 27001:2022 certified and holds an EU e-money license, with customers including BMW, Decathlon, Deutsche Telekom and Commerzbank.
 
-Backed by: speedinvest
+**Areas:** Company · Payments · Corporate Cards · Card Issuing · Spend Management · Expense Management · Fintech · Cards-as-a-Service · Banking as a Service · Travel · Accounting
+
+## Pliant on APIs.io
+
+Everything profiled for Pliant is published on APIs.io rather than in this repository. Start at the provider page — **[apis.io/providers/pliant/](https://apis.io/providers/pliant/)** — or go straight to one of the APIs or properties below.
+
+### APIs (19)
+
+- [Pliant Account Entries API](https://apis.io/apis/pliant/pliant-account-entries-api/) — This tag is for operations related to account entries
+- [Pliant Accounting Projects API](https://apis.io/apis/pliant/pliant-accounting-projects-api/) — This tag is for operations related to accounting projects
+- [Pliant Accounting Teams API](https://apis.io/apis/pliant/pliant-accounting-teams-api/) — This tag is for operations related to accounting teams
+- [Pliant Accounting Transactions API](https://apis.io/apis/pliant/pliant-accounting-transactions-api/) — This tag is for operations related to accounting transactions
+- [Pliant Callbacks API](https://apis.io/apis/pliant/pliant-callbacks-api/) — This tag is for operations related to callbacks
+- [Pliant Card Accounts API](https://apis.io/apis/pliant/pliant-card-accounts-api/) — This tag is for operations related to card accounts
+- [Pliant Card Controls API](https://apis.io/apis/pliant/pliant-card-controls-api/) — This tag is for operations related to card controls
+- [Pliant Card Copilots API](https://apis.io/apis/pliant/pliant-card-copilots-api/) — This tag is for operations related to card copilots
+- [Pliant Card Sensitive Data API](https://apis.io/apis/pliant/pliant-card-sensitive-data-api/) — This tag is for operations related to card sensitive data
+- [Pliant Cardholders API](https://apis.io/apis/pliant/pliant-cardholders-api/) — This tag is for operations related to cardholders
+- [Pliant Cards API](https://apis.io/apis/pliant/pliant-cards-api/) — This tag is for operations related to cards
+- [Pliant Custom Fields API](https://apis.io/apis/pliant/pliant-custom-fields-api/) — This tag is for operations related to custom fields
+- [Pliant Organizations API](https://apis.io/apis/pliant/pliant-organizations-api/) — This tag is for operations related to organizations
+- [Pliant Payments API](https://apis.io/apis/pliant/pliant-payments-api/) — This tag is for operations related to payments
+- [Pliant Receipt Automatching API](https://apis.io/apis/pliant/pliant-receipt-automatching-api/) — This tag is for operations related to receipt automatching
+- [Pliant Receipts API](https://apis.io/apis/pliant/pliant-receipts-api/) — This tag is for operations related to receipts
+- [Pliant Statements API](https://apis.io/apis/pliant/pliant-statements-api/) — This tag is for operations related to statements
+- [Pliant Test Data Generator (Sandbox-only) API](https://apis.io/apis/pliant/pliant-test-data-generator-sandbox-only-api/) — This tag is for operations related to test data generation
+- [Pliant Transactions API](https://apis.io/apis/pliant/pliant-transactions-api/) — This tag is for operations related to transactions
+
+### Published properties
+
+Each property below is a page on APIs.io carrying the machine-readable artifact and what it says.
+
+#### AsyncAPI (1)
+
+Event-driven and webhook contracts.
+
+- [Pliant Callbacks Webhooks](https://apis.io/asyncapis/pliant/pliant-callbacks-webhooks/)
+
+#### MCP servers (1)
+
+Model Context Protocol servers that expose the API to agents.
+
+- [pliant-customer-api](https://apis.io/servers/pliant/pliant-customer-api/)
+
+#### Agentic access (1)
+
+Which operations an agent can call, which act, and which need a human in the loop.
+
+- [Pliant Agentic Access](https://apis.io/agentic-access/pliant/pliant-agentic-access/)
+
+#### Governance rules (1)
+
+Spectral rulesets for the provider's contracts.
+
+- [Pliant API Rules](https://apis.io/rules/pliant/pliant-rules/)
+
+#### Security (3)
+
+Authentication, trust centre, and vulnerability disclosure.
+
+- [Pliant Authentication](https://apis.io/security/pliant/pliant-authentication/)
+- [Pliant Domain Security](https://apis.io/security/pliant/pliant-domain-security/)
+- [Pliant Vulnerability Disclosure](https://apis.io/security/pliant/pliant-vulnerability-disclosure/)
+
+## Where to find this API
+
+Links to the company's own pages. This repository publishes no copy of their specifications — the canonical document is theirs and lives at the URLs below.
+
+- [Website](https://www.getpliant.com/en-us)
+- [Documentation](https://customer-api.getpliant.com/docs/introduction)
+- [Getting started](https://customer-api.getpliant.com/docs/introduction)
+- [API reference](https://customer-api.getpliant.com/reference/list-organizations)
+- [Pricing](https://www.getpliant.com/en-us/pricing)
+- [Sign up](https://www.getpliant.com/en-us/book-demo)
+- [Support](https://help.getpliant.com/en/)
+- [Changelog](https://customer-api.getpliant.com/changelog)
+- [Blog](https://www.getpliant.com/en-us/blog)
+- [Security](https://www.getpliant.com/.well-known/security.txt)
+- [Privacy policy](https://www.getpliant.com/en-us/privacy-policy)
+- [Status](https://customer-api.getpliant.com/page/status)
+
+## API Evangelist rating
+
+**Kin Score 56.3** — strong · rubric 0.25.0 · scored 2026-10-23
+
+| Facet | Score |
+|---|---|
+| Discoverability | 76.7 |
+| Contract quality | 57.8 |
+| Contract governance | 35.6 |
+| Operational transparency | 32.9 |
+| Developer ergonomics | 47.0 |
+| Access clarity | 42.1 |
+
+**Agent readiness 44.3** — agent-ready (gated down from agent-native)
+
+| Agent-readiness dimension | Result |
+|---|---|
+| Spec Presence | yes |
+| Agentic Access | derived (partial credit) |
+| Reversibility Documented | documented (partial credit) |
+| MCP Server | verified |
+| Auth Clarity | bearer (partial credit) |
+| Idempotency | — |
+| Error Semantics | verified |
+| OpenAPI Examples | partial |
+| Rate Limit Signal | — |
+| Event Surface Described | yes |
+| Agent Skills | derived (partial credit) |
+| Well Known Catalog | — |
+| Consent Identity | — |
+| Agent Card | — |
+| Dry Run Mode | — |
+| Delegated Identity | — |
+| Protected Resource Metadata | — |
+| Dynamic Client Registration | — |
+| Agentic Commerce | — |
+| Pagination Ratio | paginated |
+| Operation Distinctiveness | distinct |
+
+**Regulatory alignment 35.7** — Payments
+
+The rubric is published at [github.com/api-evangelist/kin-score](https://github.com/api-evangelist/kin-score). The per-check breakdown behind these numbers — which checks were earned, partial or missed — along with score history and how this provider compares to its peers, is available at [apis.io/providers/pliant/](https://apis.io/providers/pliant/).
+
+## How this profile is made
+
+API Evangelist profiles a company's public API surface the way a developer would find it: the website, developer portal and documentation, the specifications it publishes, its public repositories, and its pricing, status and changelog pages. From that it derives the properties above — contracts split per API, workflows, schemas, collections, governance rules, plans and rate limits — and scores them against the published [Kin Score rubric](https://github.com/api-evangelist/kin-score).
+
+The artifacts are published on [APIs.io](https://apis.io), not in this repository. This repository is the public record for Pliant: the place to say something is wrong, missing or out of date, and to ask for a re-score or a removal.
+
+## Open an issue
+
+- **Something about this listing** — a wrong description, a missing API, a stale artifact or a question about the rating: [open an issue on this repository](https://github.com/api-evangelist/pliant/issues/new).
+- **A new API, or one that is not in the catalog yet** — [submit it on APIs.io](https://apis.io/add/).
+- **Anything else** — [the APIs.io inbox](https://github.com/api-search/inbox/issues/new) or [info@apievangelist.com](mailto:info@apievangelist.com).
